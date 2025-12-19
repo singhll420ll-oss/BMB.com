@@ -1,0 +1,10 @@
+Instructions for favicon.ico:
+1. Create a simple icon based on your logo
+2. Multiple sizes needed: 16x16, 32x32, 64x64 pixels
+3. ICO format (or PNG for modern browsers)
+4. Save as: static/images/favicon.ico
+
+For quick generation:
+- Use your logo simplified
+- Single color (orange #ff6b35) on transparent
+- Burger or bite mark symbol

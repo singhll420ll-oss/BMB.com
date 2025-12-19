@@ -1,0 +1,3 @@
+# This file keeps the uploads directory in git
+# Actual uploads (images) will be added here at runtime
+# They are not committed to git (added to .gitignore)

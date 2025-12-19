@@ -1,0 +1,356 @@
+/* Secret Clock Styles - No visual hints allowed */
+
+.clock-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 0 auto;
+    padding: 2rem;
+    text-align: center;
+}
+
+.clock-display {
+    font-family: 'Digital-7', 'Courier New', monospace;
+    font-size: 5rem;
+    font-weight: bold;
+    color: #ff6b35;
+    text-shadow: 0 0 10px rgba(255, 107, 53, 0.3);
+    background-color: #2d3047;
+    border-radius: 1rem;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+.clock-display::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #ff6b35, transparent);
+    animation: scanline 2s linear infinite;
+}
+
+@keyframes scanline {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.clock-label {
+    font-size: 1.2rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.clock-time {
+    display: inline-block;
+    min-width: 240px;
+    position: relative;
+}
+
+/* Edit Mode Styles (Hidden by default) */
+.clock-edit-mode {
+    display: none;
+}
+
+.clock-edit-mode.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.clock-edit-controls {
+    background-color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-top: 1rem;
+    border: 2px solid #ff6b35;
+}
+
+.clock-edit-title {
+    color: #2d3047;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.time-input-group {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.time-input {
+    width: 60px;
+    height: 50px;
+    font-size: 1.5rem;
+    text-align: center;
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+.time-input:focus {
+    border-color: #ff6b35;
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 53, 0.25);
+    outline: none;
+}
+
+.time-separator {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2d3047;
+}
+
+.period-select {
+    height: 50px;
+    font-size: 1.2rem;
+    border: 2px solid #dee2e6;
+    border-radius: 0.5rem;
+    padding: 0 1rem;
+    background-color: white;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.period-select:focus {
+    border-color: #ff6b35;
+    outline: none;
+}
+
+.clock-edit-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.clock-save-btn,
+.clock-cancel-btn {
+    padding: 0.75rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.clock-save-btn {
+    background-color: #ff6b35;
+    color: white;
+}
+
+.clock-save-btn:hover {
+    background-color: #e55a2b;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+}
+
+.clock-save-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.clock-cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.clock-cancel-btn:hover {
+    background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+/* Success/Error Messages */
+.clock-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    color: white;
+    font-weight: 600;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    max-width: 300px;
+}
+
+.clock-message.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.clock-message.success {
+    background-color: #28a745;
+    border-left: 4px solid #1e7e34;
+}
+
+.clock-message.error {
+    background-color: #dc3545;
+    border-left: 4px solid #bd2130;
+}
+
+.clock-message.info {
+    background-color: #17a2b8;
+    border-left: 4px solid #117a8b;
+}
+
+/* Loading Animation */
+.clock-loading {
+    display: none;
+    width: 40px;
+    height: 40px;
+    margin: 1rem auto;
+    border: 4px solid rgba(255, 107, 53, 0.3);
+    border-radius: 50%;
+    border-top-color: #ff6b35;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Secret Combination Indicator (Completely Hidden - No Visual Feedback) */
+.combination-progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.combination-progress::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0%;
+    height: 3px;
+    background-color: #ff6b35;
+    transition: width 0.3s ease;
+}
+
+/* Touch Device Optimization */
+@media (hover: none) and (pointer: coarse) {
+    .clock-display {
+        font-size: 4rem;
+        padding: 1rem;
+    }
+    
+    .time-input {
+        width: 70px;
+        height: 60px;
+        font-size: 1.8rem;
+    }
+    
+    .clock-save-btn,
+    .clock-cancel-btn {
+        padding: 1rem 2.5rem;
+        font-size: 1.1rem;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .clock-display {
+        background-color: #1a1c2e;
+        color: #ff8c5a;
+        text-shadow: 0 0 10px rgba(255, 140, 90, 0.3);
+    }
+    
+    .clock-edit-controls {
+        background-color: #2d3047;
+        border-color: #ff8c5a;
+    }
+    
+    .clock-edit-title {
+        color: #f8f9fa;
+    }
+    
+    .time-input,
+    .period-select {
+        background-color: #343a40;
+        border-color: #495057;
+        color: #f8f9fa;
+    }
+    
+    .time-separator {
+        color: #f8f9fa;
+    }
+}
+
+/* Accessibility */
+.clock-display:focus-visible {
+    outline: 3px solid #ff6b35;
+    outline-offset: 3px;
+}
+
+.time-input:focus-visible,
+.period-select:focus-visible {
+    outline: 3px solid #ff6b35;
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .clock-display {
+        border: 2px solid #ff6b35;
+    }
+    
+    .clock-edit-controls {
+        border: 3px solid #ff6b35;
+    }
+    
+    .time-input,
+    .period-select {
+        border-width: 3px;
+    }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .clock-display::before {
+        animation: none;
+    }
+    
+    .clock-edit-mode.active {
+        animation: none;
+    }
+    
+    .clock-message {
+        transition: opacity 0.3s ease;
+    }
+    
+    .clock-save-btn:hover,
+    .clock-cancel-btn:hover {
+        transform: none;
+    }
+}

@@ -1,0 +1,12 @@
+Instructions for logo.png:
+1. Create a logo with text "Bite Me Buddy" in a food-related design
+2. Recommended dimensions: 200x100 pixels
+3. Format: PNG with transparent background
+4. Colors: Use #ff6b35 (primary orange) and #2d3047 (dark blue)
+5. Save as: static/images/logo.png
+
+Sample design idea:
+- Burger icon with bite mark
+- Text in bold, friendly font
+- Orange and blue color scheme
+- Transparent background
