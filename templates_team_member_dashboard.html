@@ -1,0 +1,769 @@
+{% extends "base.html" %}
+
+{% block title %}Team Dashboard - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="dashboard-header mb-4">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h3 mb-2">
+                <i class="fas fa-tachometer-alt me-2 text-primary"></i>
+                Team Dashboard
+            </h1>
+            <p class="text-muted">
+                <i class="fas fa-user me-1"></i> Welcome, {{ team_member.name }}!
+                <span class="ms-3">
+                    <i class="fas fa-clock me-1"></i>
+                    Today's sessions: {{ today_sessions }}
+                </span>
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="card bg-primary text-white">
+                <div class="card-body py-2">
+                    <small>Assigned Orders</small>
+                    <h4 class="mb-0">{{ orders|length }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">To Deliver</h6>
+                        <h2 class="mb-0">
+                            {{ orders|selectattr('status', 'equalto', 'out_for_delivery')|list|length }}
+                        </h2>
+                    </div>
+                    <i class="fas fa-truck fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Preparing</h6>
+                        <h2 class="mb-0">
+                            {{ orders|selectattr('status', 'equalto', 'preparing')|list|length }}
+                        </h2>
+                    </div>
+                    <i class="fas fa-utensils fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Completed Today</h6>
+                        <h2 class="mb-0">8</h2>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Unread Plans</h6>
+                        <h2 class="mb-0">{{ unread_plans|length }}</h2>
+                    </div>
+                    <i class="fas fa-calendar-alt fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Left Column: Quick Actions & Plans -->
+    <div class="col-lg-4 mb-4">
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i> Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="/team/orders" class="btn btn-outline-primary text-start">
+                        <i class="fas fa-clipboard-list me-2"></i> View All Orders
+                    </a>
+                    
+                    <a href="/team/plans" class="btn btn-outline-success text-start position-relative">
+                        <i class="fas fa-calendar-alt me-2"></i> View Plans
+                        {% if unread_plans|length > 0 %}
+                        <span class="position-absolute top-50 end-0 translate-middle-y badge rounded-pill bg-danger me-3">
+                            {{ unread_plans|length }}
+                        </span>
+                        {% endif %}
+                    </a>
+                    
+                    <a href="/team/profile" class="btn btn-outline-info text-start">
+                        <i class="fas fa-user-cog me-2"></i> My Profile
+                    </a>
+                    
+                    <button class="btn btn-outline-warning text-start" 
+                            data-bs-toggle="modal" data-bs-target="#attendanceModal">
+                        <i class="fas fa-clock me-2"></i> Attendance Report
+                    </button>
+                </div>
+                
+                <hr>
+                
+                <!-- Clock In/Out -->
+                <div class="text-center mb-4">
+                    <h6 class="mb-3">
+                        <i class="fas fa-clock me-1"></i> Session Timer
+                    </h6>
+                    <div id="sessionTimer" class="display-4 mb-3">00:00:00</div>
+                    <div class="btn-group" role="group">
+                        <button class="btn btn-success" id="clockInBtn">
+                            <i class="fas fa-play me-1"></i> Clock In
+                        </button>
+                        <button class="btn btn-danger" id="clockOutBtn" disabled>
+                            <i class="fas fa-stop me-1"></i> Clock Out
+                        </button>
+                    </div>
+                    <div class="mt-2 small text-muted" id="sessionStatus">
+                        Not clocked in
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Today's Plans -->
+        <div class="card mt-4 border-warning">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0">
+                    <i class="fas fa-calendar-day me-2"></i> Today's Plans
+                    {% if unread_plans|length > 0 %}
+                    <span class="badge bg-danger ms-2">{{ unread_plans|length }} new</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if unread_plans %}
+                <div class="list-group list-group-flush">
+                    {% for plan in unread_plans[:3] %}
+                    <div class="list-group-item border-0 px-0 py-2">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">From: {{ plan.admin.name }}</h6>
+                                <p class="small text-muted mb-1">
+                                    {{ plan.description|truncate(50) }}
+                                </p>
+                                <small class="text-muted">
+                                    {{ plan.created_at.strftime('%I:%M %p') }}
+                                </small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-primary"
+                                    hx-get="/team/plan/{{ plan.id }}"
+                                    hx-target="#planDetailsModal .modal-content"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#planDetailsModal">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if unread_plans|length > 3 %}
+                <div class="text-center mt-3">
+                    <a href="/team/plans" class="btn btn-sm btn-outline-warning">
+                        View All ({{ total_plans }})
+                    </a>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center text-muted py-3">
+                    <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                    <p class="mb-0">No new plans for today</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Performance Stats -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i> This Week's Stats
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Deliveries Completed</span>
+                        <span>42</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: 85%;"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>On-time Delivery</span>
+                        <span>92%</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-info" style="width: 92%;"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Customer Rating</span>
+                        <span>4.7/5</span>
+                    </div>
+                    <div class="progress" style="height: 8px;">
+                        <div class="progress-bar bg-warning" style="width: 94%;"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <small class="text-muted">Last updated: Today, 3:45 PM</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right Column: Assigned Orders -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-clipboard-list me-2"></i> Assigned Orders
+                </h5>
+                <div class="btn-group" role="group">
+                    <button type="button" class="btn btn-sm btn-outline-primary active" 
+                            onclick="filterOrders('all')">All</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                            onclick="filterOrders('out_for_delivery')">To Deliver</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" 
+                            onclick="filterOrders('preparing')">Preparing</button>
+                </div>
+            </div>
+            
+            <div class="card-body">
+                {% if orders %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Service</th>
+                                <th>Items</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in orders %}
+                            <tr class="order-row" data-status="{{ order.status }}">
+                                <td>
+                                    <strong>#{{ order.id }}</strong>
+                                    {% if order.created_at.date() == today %}
+                                    <span class="badge bg-success ms-1">New</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div>{{ order.customer.name }}</div>
+                                    <small class="text-muted">{{ order.customer.phone }}</small>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if order.service.image_url %}
+                                        <img src="{{ order.service.image_url }}" 
+                                             alt="{{ order.service.name }}"
+                                             class="rounded-circle me-2" 
+                                             style="width: 30px; height: 30px; object-fit: cover;">
+                                        {% endif %}
+                                        <span>{{ order.service.name }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% set item_count = order.order_items|length %}
+                                    <span class="badge bg-secondary">{{ item_count }} item(s)</span>
+                                </td>
+                                <td>
+                                    <h6 class="mb-0">₹{{ order.total_amount|round(2) }}</h6>
+                                </td>
+                                <td>
+                                    {% if order.status == 'pending' %}
+                                    <span class="badge bg-warning">Pending</span>
+                                    {% elif order.status == 'confirmed' %}
+                                    <span class="badge bg-info">Confirmed</span>
+                                    {% elif order.status == 'preparing' %}
+                                    <span class="badge bg-primary">Preparing</span>
+                                    {% elif order.status == 'out_for_delivery' %}
+                                    <span class="badge bg-success">Out for Delivery</span>
+                                    {% elif order.status == 'delivered' %}
+                                    <span class="badge bg-success">Delivered</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-info"
+                                                hx-get="/team/order/{{ order.id }}/details"
+                                                hx-target="#orderDetailsModal .modal-content"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#orderDetailsModal">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        
+                                        {% if order.status == 'confirmed' %}
+                                        <button class="btn btn-outline-primary"
+                                                hx-post="/team/order/{{ order.id }}/status"
+                                                hx-vals='{"status": "preparing"}'
+                                                hx-target="#order-{{ order.id }}-status">
+                                            <i class="fas fa-play"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if order.status == 'preparing' %}
+                                        <button class="btn btn-outline-success"
+                                                hx-post="/team/order/{{ order.id }}/status"
+                                                hx-vals='{"status": "out_for_delivery"}'
+                                                hx-target="#order-{{ order.id }}-status">
+                                            <i class="fas fa-truck"></i>
+                                        </button>
+                                        {% endif %}
+                                        
+                                        {% if order.status == 'out_for_delivery' %}
+                                        <button class="btn btn-outline-success"
+                                                hx-post="/team/order/{{ order.id }}/generate-otp"
+                                                hx-target="#order-{{ order.id }}-actions">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div id="order-{{ order.id }}-actions"></div>
+                                    <div id="order-{{ order.id }}-status"></div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Order Priority -->
+                <div class="alert alert-info mt-3">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-info-circle fa-2x"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="alert-heading">Delivery Priority</h6>
+                            <p class="mb-0 small">
+                                • Red highlighted orders are priority (over 30 minutes old)<br>
+                                • Always verify OTP before marking as delivered<br>
+                                • Contact customer if unable to locate address
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-clipboard-check fa-3x text-muted mb-3"></i>
+                    <h4>No Orders Assigned</h4>
+                    <p class="text-muted">You don't have any assigned orders at the moment</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Delivery Map (Simulated) -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-map-marked-alt me-2"></i> Delivery Locations
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="map-placeholder bg-light rounded d-flex align-items-center justify-content-center" 
+                     style="height: 300px;">
+                    <div class="text-center">
+                        <i class="fas fa-map fa-3x text-muted mb-3"></i>
+                        <h5>Delivery Map</h5>
+                        <p class="text-muted">Interactive map would appear here</p>
+                    </div>
+                </div>
+                
+                <div class="row mt-3">
+                    {% for order in orders if order.status == 'out_for_delivery' %}
+                    <div class="col-md-6">
+                        <div class="card mb-2">
+                            <div class="card-body py-2">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">Order #{{ order.id }}</h6>
+                                        <small class="text-muted">{{ order.customer.name }}</small>
+                                    </div>
+                                    <span class="badge bg-success">Active</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Notes -->
+        <div class="card mt-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-sticky-note me-2"></i> Quick Notes
+                </h5>
+                <button class="btn btn-sm btn-primary" onclick="addNote()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="notesContainer">
+                    <!-- Notes will be added here -->
+                </div>
+                <div class="mt-3">
+                    <textarea class="form-control" id="newNote" rows="2" 
+                              placeholder="Add a quick note..."></textarea>
+                    <div class="text-end mt-2">
+                        <button class="btn btn-sm btn-primary" onclick="saveNote()">
+                            Save Note
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Plan Details Modal -->
+<div class="modal fade" id="planDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Attendance Modal -->
+<div class="modal fade" id="attendanceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-clock me-2"></i> Attendance Report
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div hx-get="/team/attendance" hx-trigger="load" hx-swap="innerHTML"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Session timer
+        let sessionStart = null;
+        let timerInterval = null;
+        const timerDisplay = document.getElementById('sessionTimer');
+        const clockInBtn = document.getElementById('clockInBtn');
+        const clockOutBtn = document.getElementById('clockOutBtn');
+        const sessionStatus = document.getElementById('sessionStatus');
+        
+        // Check if already clocked in (from localStorage)
+        const savedStart = localStorage.getItem('sessionStart');
+        if (savedStart) {
+            sessionStart = new Date(savedStart);
+            startTimer();
+            updateButtonStates(true);
+            sessionStatus.textContent = 'Clocked in since ' + sessionStart.toLocaleTimeString();
+        }
+        
+        clockInBtn.addEventListener('click', function() {
+            sessionStart = new Date();
+            localStorage.setItem('sessionStart', sessionStart.toISOString());
+            startTimer();
+            updateButtonStates(true);
+            sessionStatus.textContent = 'Clocked in since ' + sessionStart.toLocaleTimeString();
+            showToast('Clocked in successfully!', 'success');
+        });
+        
+        clockOutBtn.addEventListener('click', function() {
+            if (sessionStart) {
+                clearInterval(timerInterval);
+                localStorage.removeItem('sessionStart');
+                updateButtonStates(false);
+                sessionStatus.textContent = 'Session ended. Duration: ' + timerDisplay.textContent;
+                timerDisplay.textContent = '00:00:00';
+                showToast('Clocked out successfully!', 'info');
+                
+                // In real app, send session data to server
+                const duration = Math.floor((new Date() - sessionStart) / 1000);
+                console.log('Session duration:', duration, 'seconds');
+            }
+        });
+        
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+        
+        function updateTimer() {
+            if (!sessionStart) return;
+            
+            const now = new Date();
+            const diff = Math.floor((now - sessionStart) / 1000);
+            
+            const hours = Math.floor(diff / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((diff % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (diff % 60).toString().padStart(2, '0');
+            
+            timerDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        
+        function updateButtonStates(isClockedIn) {
+            clockInBtn.disabled = isClockedIn;
+            clockOutBtn.disabled = !isClockedIn;
+            
+            if (isClockedIn) {
+                clockInBtn.classList.remove('btn-success');
+                clockInBtn.classList.add('btn-secondary');
+                clockOutBtn.classList.remove('btn-secondary');
+                clockOutBtn.classList.add('btn-danger');
+            } else {
+                clockInBtn.classList.remove('btn-secondary');
+                clockInBtn.classList.add('btn-success');
+                clockOutBtn.classList.remove('btn-danger');
+                clockOutBtn.classList.add('btn-secondary');
+            }
+        }
+        
+        // Order filter functionality
+        window.filterOrders = function(status) {
+            const orderRows = document.querySelectorAll('.order-row');
+            
+            orderRows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status');
+                
+                if (status === 'all' || rowStatus === status) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update button states
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        };
+        
+        // Add hover effects to order rows
+        const orderRows = document.querySelectorAll('.order-row');
+        orderRows.forEach(row => {
+            const createdTime = new Date('{{ order.created_at.isoformat() }}');
+            const now = new Date();
+            const hoursDiff = (now - createdTime) / (1000 * 60 * 60);
+            
+            if (hoursDiff > 0.5) { // More than 30 minutes old
+                row.style.backgroundColor = '#fff3cd';
+            }
+            
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = this.style.backgroundColor === 'rgb(255, 243, 205)' ? 
+                                           '#ffe8a1' : '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                if (hoursDiff > 0.5) {
+                    this.style.backgroundColor = '#fff3cd';
+                } else {
+                    this.style.backgroundColor = '';
+                }
+            });
+        });
+        
+        // Load notes from localStorage
+        loadNotes();
+    });
+    
+    function addNote() {
+        const notesContainer = document.getElementById('notesContainer');
+        const noteInput = document.getElementById('newNote');
+        
+        if (noteInput.value.trim() === '') {
+            showToast('Please enter a note', 'warning');
+            return;
+        }
+        
+        const noteId = Date.now();
+        const note = {
+            id: noteId,
+            text: noteInput.value.trim(),
+            timestamp: new Date().toLocaleString()
+        };
+        
+        // Save to localStorage
+        const notes = JSON.parse(localStorage.getItem('teamNotes') || '[]');
+        notes.push(note);
+        localStorage.setItem('teamNotes', JSON.stringify(notes));
+        
+        // Add to display
+        addNoteToDisplay(note);
+        
+        // Clear input
+        noteInput.value = '';
+        showToast('Note added!', 'success');
+    }
+    
+    function saveNote() {
+        addNote();
+    }
+    
+    function loadNotes() {
+        const notes = JSON.parse(localStorage.getItem('teamNotes') || '[]');
+        const notesContainer = document.getElementById('notesContainer');
+        
+        notesContainer.innerHTML = '';
+        notes.forEach(note => addNoteToDisplay(note));
+    }
+    
+    function addNoteToDisplay(note) {
+        const notesContainer = document.getElementById('notesContainer');
+        const noteElement = document.createElement('div');
+        noteElement.className = 'card mb-2';
+        noteElement.innerHTML = `
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div style="flex: 1;">
+                        <p class="mb-1 small">${note.text}</p>
+                        <small class="text-muted">${note.timestamp}</small>
+                    </div>
+                    <button class="btn btn-sm btn-link text-danger" onclick="deleteNote(${note.id})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        notesContainer.appendChild(noteElement);
+    }
+    
+    function deleteNote(noteId) {
+        let notes = JSON.parse(localStorage.getItem('teamNotes') || '[]');
+        notes = notes.filter(note => note.id !== noteId);
+        localStorage.setItem('teamNotes', JSON.stringify(notes));
+        loadNotes();
+        showToast('Note deleted', 'info');
+    }
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        const toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.appendChild(toast);
+        document.body.appendChild(toastContainer);
+        
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', function() {
+            toastContainer.remove();
+        });
+    }
+</script>
+
+<style>
+    .order-row {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .order-row:hover {
+        transform: translateX(5px);
+    }
+    
+    .map-placeholder {
+        border: 2px dashed #dee2e6;
+    }
+    
+    .toast-container {
+        z-index: 1100;
+    }
+    
+    #sessionTimer {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: #0d6efd;
+    }
+    
+    @media (max-width: 768px) {
+        .btn-group {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        .table-responsive {
+            font-size: 14px;
+        }
+        
+        #sessionTimer {
+            font-size: 2rem;
+        }
+    }
+</style>
+{% endblock %}

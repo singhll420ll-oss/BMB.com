@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="orders-header mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/customer/dashboard">
+                    <i class="fas fa-home me-1"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                My Orders
+            </li>
+        </ol>
+    </nav>
+    
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-3">
+                <i class="fas fa-clipboard-list me-2 text-primary"></i>
+                My Orders
+            </h1>
+            <p class="text-muted">Track and manage all your orders in one place</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-outline-primary active" 
+                        onclick="filterOrders('all')">All</button>
+                <button type="button" class="btn btn-outline-primary" 
+                        onclick="filterOrders('pending')">Pending</button>
+                <button type="button" class="btn btn-outline-primary" 
+                        onclick="filterOrders('delivered')">Delivered</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Total Orders</h6>
+                        <h2 class="mb-0">{{ orders|length }}</h2>
+                    </div>
+                    <i class="fas fa-shopping-bag fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Delivered</h6>
+                        <h2 class="mb-0">
+                            {{ orders|selectattr('status', 'equalto', 'delivered')|list|length }}
+                        </h2>
+                    </div>
+                    <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">In Progress</h6>
+                        <h2 class="mb-0">
+                            {{ orders|rejectattr('status', 'equalto', 'delivered')|list|length }}
+                        </h2>
+                    </div>
+                    <i class="fas fa-clock fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0">Total Spent</h6>
+                        <h2 class="mb-0">
+                            ₹{{ orders|selectattr('status', 'equalto', 'delivered')|map(attribute='total_amount')|sum|default(0)|round(2) }}
+                        </h2>
+                    </div>
+                    <i class="fas fa-rupee-sign fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Orders List -->
+<div class="card">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-history me-2"></i> Order History
+        </h5>
+        <div class="input-group" style="width: 300px;">
+            <input type="text" class="form-control" placeholder="Search orders..." 
+                   id="orderSearch">
+            <button class="btn btn-outline-secondary" type="button">
+                <i class="fas fa-search"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="card-body">
+        {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover" id="ordersTable">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date & Time</th>
+                        <th>Service</th>
+                        <th>Items</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Delivery</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr class="order-row" data-status="{{ order.status }}" 
+                        data-order-id="{{ order.id }}" data-service="{{ order.service.name|lower }}">
+                        <td>
+                            <strong>#{{ order.id }}</strong>
+                            {% if loop.index <= 3 %}
+                            <span class="badge bg-warning ms-1">New</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ order.created_at.strftime('%d %b %Y') }}</div>
+                            <small class="text-muted">{{ order.created_at.strftime('%I:%M %p') }}</small>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if order.service.image_url %}
+                                <img src="{{ order.service.image_url }}" 
+                                     alt="{{ order.service.name }}"
+                                     class="rounded-circle me-2" 
+                                     style="width: 30px; height: 30px; object-fit: cover;">
+                                {% endif %}
+                                <span>{{ order.service.name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% set item_count = order.order_items|length %}
+                            <span class="badge bg-secondary">{{ item_count }} item(s)</span>
+                        </td>
+                        <td>
+                            <h6 class="mb-0">₹{{ order.total_amount|round(2) }}</h6>
+                        </td>
+                        <td>
+                            {% if order.status == 'pending' %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% elif order.status == 'confirmed' %}
+                            <span class="badge bg-info">Confirmed</span>
+                            {% elif order.status == 'preparing' %}
+                            <span class="badge bg-primary">Preparing</span>
+                            {% elif order.status == 'out_for_delivery' %}
+                            <span class="badge bg-success">Out for Delivery</span>
+                            {% elif order.status == 'delivered' %}
+                            <span class="badge bg-success">Delivered</span>
+                            {% elif order.status == 'cancelled' %}
+                            <span class="badge bg-danger">Cancelled</span>
+                            {% endif %}
+                            
+                            {% if order.status == 'out_for_delivery' and order.otp %}
+                            <div class="small text-muted mt-1">
+                                <i class="fas fa-key me-1"></i> OTP: {{ order.otp }}
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if order.delivered_at %}
+                            <div>{{ order.delivered_at.strftime('%d %b %Y') }}</div>
+                            <small class="text-muted">{{ order.delivered_at.strftime('%I:%M %p') }}</small>
+                            {% elif order.status == 'out_for_delivery' %}
+                            <div class="text-success">
+                                <i class="fas fa-truck me-1"></i> On the way
+                            </div>
+                            {% else %}
+                            <div class="text-muted">--</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-info"
+                                        hx-get="/customer/order/{{ order.id }}"
+                                        hx-target="#orderDetailsModal .modal-content"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#orderDetailsModal">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                
+                                {% if order.status == 'pending' %}
+                                <button class="btn btn-outline-danger"
+                                        hx-post="/customer/order/{{ order.id }}/cancel"
+                                        hx-confirm="Cancel this order?">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                {% endif %}
+                                
+                                {% if order.status == 'delivered' %}
+                                <button class="btn btn-outline-success"
+                                        onclick="reorder({{ order.id }})">
+                                    <i class="fas fa-redo"></i>
+                                </button>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if orders|length > 10 %}
+        <nav aria-label="Order pagination">
+            <ul class="pagination justify-content-center mt-4">
+                <li class="page-item disabled">
+                    <a class="page-link" href="#" tabindex="-1">Previous</a>
+                </li>
+                <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                <li class="page-item"><a class="page-link" href="#">2</a></li>
+                <li class="page-item"><a class="page-link" href="#">3</a></li>
+                <li class="page-item">
+                    <a class="page-link" href="#">Next</a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+            <h4>No Orders Yet</h4>
+            <p class="text-muted">You haven't placed any orders yet</p>
+            <a href="/customer/services" class="btn btn-primary">
+                <i class="fas fa-concierge-bell me-1"></i> Browse Services
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Order Timeline -->
+{% if orders and orders[0].status != 'delivered' %}
+<div class="card mt-4">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">
+            <i class="fas fa-shipping-fast me-2"></i> Current Order Status
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="timeline">
+            {% set latest_order = orders[0] %}
+            <div class="timeline-item {% if latest_order.status in ['pending', 'confirmed', 'preparing', 'out_for_delivery', 'delivered'] %}active{% endif %}">
+                <div class="timeline-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+                <div class="timeline-content">
+                    <h6>Order Placed</h6>
+                    <p class="text-muted small">{{ latest_order.created_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                </div>
+            </div>
+            
+            <div class="timeline-item {% if latest_order.status in ['confirmed', 'preparing', 'out_for_delivery', 'delivered'] %}active{% endif %}">
+                <div class="timeline-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="timeline-content">
+                    <h6>Order Confirmed</h6>
+                    {% if latest_order.confirmed_at %}
+                    <p class="text-muted small">{{ latest_order.confirmed_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                    {% else %}
+                    <p class="text-muted small">Waiting for confirmation</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="timeline-item {% if latest_order.status in ['preparing', 'out_for_delivery', 'delivered'] %}active{% endif %}">
+                <div class="timeline-icon">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                <div class="timeline-content">
+                    <h6>Food Preparation</h6>
+                    {% if latest_order.prepared_at %}
+                    <p class="text-muted small">{{ latest_order.prepared_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                    {% else %}
+                    <p class="text-muted small">Will start soon</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="timeline-item {% if latest_order.status in ['out_for_delivery', 'delivered'] %}active{% endif %}">
+                <div class="timeline-icon">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <div class="timeline-content">
+                    <h6>Out for Delivery</h6>
+                    {% if latest_order.out_for_delivery_at %}
+                    <p class="text-muted small">{{ latest_order.out_for_delivery_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                    {% else %}
+                    <p class="text-muted small">Will be dispatched soon</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="timeline-item {% if latest_order.status == 'delivered' %}active{% endif %}">
+                <div class="timeline-icon">
+                    <i class="fas fa-home"></i>
+                </div>
+                <div class="timeline-content">
+                    <h6>Delivered</h6>
+                    {% if latest_order.delivered_at %}
+                    <p class="text-muted small">{{ latest_order.delivered_at.strftime('%d %b %Y, %I:%M %p') }}</p>
+                    {% else %}
+                    <p class="text-muted small">On the way to you</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <!-- Content loaded via HTMX -->
+        </div>
+    </div>
+</div>
+
+<!-- Reorder Modal -->
+<div class="modal fade" id="reorderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-redo me-2"></i> Reorder Items
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Add all items from this order to your cart?</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    You can review and modify items in your cart before checkout.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmReorder">
+                    Yes, Add to Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Order search functionality
+        const searchInput = document.getElementById('orderSearch');
+        const orderRows = document.querySelectorAll('.order-row');
+        
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            orderRows.forEach(row => {
+                const orderId = row.getAttribute('data-order-id');
+                const serviceName = row.getAttribute('data-service');
+                
+                if (orderId.includes(searchTerm) || serviceName.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+        
+        // Order filter functionality
+        window.filterOrders = function(status) {
+            orderRows.forEach(row => {
+                const rowStatus = row.getAttribute('data-status');
+                
+                if (status === 'all' || rowStatus === status) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+            
+            // Update button states
+            document.querySelectorAll('.btn-group .btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        };
+        
+        // Reorder functionality
+        window.reorder = function(orderId) {
+            // Store the order ID for reorder confirmation
+            document.getElementById('confirmReorder').setAttribute('data-order-id', orderId);
+            
+            // Show reorder modal
+            const reorderModal = new bootstrap.Modal(document.getElementById('reorderModal'));
+            reorderModal.show();
+        };
+        
+        // Confirm reorder
+        document.getElementById('confirmReorder').addEventListener('click', function() {
+            const orderId = this.getAttribute('data-order-id');
+            
+            // Here you would typically make an API call to reorder
+            // For now, show a success message
+            showToast('Items added to cart!', 'success');
+            
+            // Close modal
+            const reorderModal = bootstrap.Modal.getInstance(document.getElementById('reorderModal'));
+            reorderModal.hide();
+            
+            // Update cart count (simulate)
+            const cartCount = document.querySelector('.navbar .fa-shopping-cart').nextElementSibling;
+            if (cartCount) {
+                const currentCount = parseInt(cartCount.textContent) || 0;
+                cartCount.textContent = currentCount + 1;
+            }
+        });
+        
+        // Toast notification function
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', function() {
+                toastContainer.remove();
+            });
+        }
+        
+        // Auto-refresh for pending orders
+        function refreshPendingOrders() {
+            const pendingRows = document.querySelectorAll('.order-row[data-status="pending"], .order-row[data-status="confirmed"], .order-row[data-status="preparing"]');
+            
+            if (pendingRows.length > 0) {
+                // Simulate status updates (in real app, this would be an API call)
+                setTimeout(() => {
+                    showToast('Order status updated!', 'info');
+                }, 30000); // Every 30 seconds
+            }
+        }
+        
+        // Start auto-refresh if there are pending orders
+        const hasPendingOrders = document.querySelectorAll('.order-row[data-status!="delivered"][data-status!="cancelled"]').length > 0;
+        if (hasPendingOrders) {
+            refreshPendingOrders();
+            setInterval(refreshPendingOrders, 30000); // Refresh every 30 seconds
+        }
+        
+        // Add hover effects to order rows
+        orderRows.forEach(row => {
+            row.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+            });
+            
+            row.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    });
+</script>
+
+<style>
+    .order-row {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .order-row:hover {
+        transform: translateX(5px);
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+    
+    .timeline-item {
+        position: relative;
+        margin-bottom: 30px;
+        padding-left: 30px;
+    }
+    
+    .timeline-item.active .timeline-icon {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .timeline-icon {
+        position: absolute;
+        left: -15px;
+        top: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background-color: #dee2e6;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
+    }
+    
+    .timeline-content {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+    }
+    
+    .toast-container {
+        z-index: 1100;
+    }
+    
+    @media (max-width: 768px) {
+        .btn-group {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+        
+        .table-responsive {
+            font-size: 14px;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,471 @@
+{% extends "base.html" %}
+
+{% block title %}{{ service.name }} Menu - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="service-menu-header mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/customer/services">
+                    <i class="fas fa-concierge-bell me-1"></i> Services
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                {{ service.name }}
+            </li>
+        </ol>
+    </nav>
+    
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-3">
+                {% if service.image_url %}
+                <img src="{{ service.image_url }}" alt="{{ service.name }}" 
+                     class="rounded-circle me-3" style="width: 60px; height: 60px; object-fit: cover;">
+                {% else %}
+                <i class="fas fa-utensils me-2 text-primary"></i>
+                {% endif %}
+                {{ service.name }}
+            </h1>
+            
+            {% if service.description %}
+            <p class="lead text-muted">{{ service.description }}</p>
+            {% endif %}
+            
+            <div class="service-info d-flex flex-wrap gap-3 mb-3">
+                <span class="badge bg-success">
+                    <i class="fas fa-clock me-1"></i> 25-35 mins
+                </span>
+                <span class="badge bg-warning">
+                    <i class="fas fa-star me-1"></i> 4.5 (2.5k+ ratings)
+                </span>
+                <span class="badge bg-info">
+                    <i class="fas fa-rupee-sign me-1"></i> Min. order: ₹150
+                </span>
+            </div>
+        </div>
+        
+        <div class="col-md-4 text-end">
+            <div class="card bg-light">
+                <div class="card-body py-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <small class="text-muted">Items in cart</small>
+                            <h4 class="mb-0" id="cartCount">
+                                {{ request.session.get('cart', {})|length }}
+                            </h4>
+                        </div>
+                        <a href="/customer/cart" class="btn btn-sm btn-primary">
+                            <i class="fas fa-shopping-cart me-1"></i> View Cart
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu Filter -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="fas fa-search"></i>
+                            </span>
+                            <input type="text" class="form-control" 
+                                   placeholder="Search menu items..." 
+                                   id="menuSearch">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <select class="form-select" id="menuSort">
+                            <option value="name">Sort by: Name</option>
+                            <option value="price_low">Price: Low to High</option>
+                            <option value="price_high">Price: High to Low</option>
+                            <option value="popular">Most Popular</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="vegOnly" checked>
+                            <label class="form-check-label" for="vegOnly">
+                                <i class="fas fa-leaf text-success me-1"></i> Veg Only
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mt-1">
+                            <input class="form-check-input" type="checkbox" 
+                                   id="availableOnly" checked>
+                            <label class="form-check-label" for="availableOnly">
+                                <i class="fas fa-check-circle text-primary me-1"></i> Available Only
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Menu Items -->
+<div class="row g-4" id="menuContainer">
+    {% for item in menu_items %}
+    <div class="col-lg-6" data-item-name="{{ item.name|lower }}" 
+         data-item-price="{{ item.price }}" data-item-available="{{ item.is_available }}">
+        <div class="card menu-item-card h-100">
+            <div class="row g-0 h-100">
+                <!-- Item Image -->
+                <div class="col-md-4">
+                    {% if item.image_url %}
+                    <img src="{{ item.image_url }}" class="img-fluid rounded-start h-100" 
+                         alt="{{ item.name }}" style="object-fit: cover;">
+                    {% else %}
+                    <div class="h-100 d-flex align-items-center justify-content-center bg-light">
+                        <i class="fas fa-utensils fa-2x text-muted"></i>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Item Details -->
+                <div class="col-md-8">
+                    <div class="card-body h-100 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="card-title mb-0">{{ item.name }}</h5>
+                            <span class="badge {% if item.is_available %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if item.is_available %}Available{% else %}Unavailable{% endif %}
+                            </span>
+                        </div>
+                        
+                        <p class="card-text text-muted small flex-grow-1">
+                            {% if item.description %}
+                                {{ item.description }}
+                            {% else %}
+                                Delicious item from {{ service.name }}
+                            {% endif %}
+                        </p>
+                        
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <div>
+                                <h4 class="text-primary mb-0">
+                                    ₹{{ item.price|round(2) }}
+                                </h4>
+                                {% if loop.index <= 2 %}
+                                <small class="text-success">
+                                    <i class="fas fa-fire me-1"></i> Popular Choice
+                                </small>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="quantity-controls" id="controls-{{ item.id }}">
+                                {% if item.is_available %}
+                                {% set cart = request.session.get('cart', {}) %}
+                                {% set item_in_cart = cart.get(item.id|string) %}
+                                
+                                {% if item_in_cart %}
+                                <div class="btn-group" role="group">
+                                    <button class="btn btn-outline-primary btn-sm" 
+                                            hx-post="/customer/cart/update"
+                                            hx-vals='{"menu_item_id": "{{ item.id }}", "quantity": "{{ item_in_cart.quantity - 1 }}"}'
+                                            hx-target="#controls-{{ item.id }}"
+                                            hx-swap="outerHTML">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    
+                                    <button class="btn btn-primary btn-sm px-3" disabled>
+                                        {{ item_in_cart.quantity }}
+                                    </button>
+                                    
+                                    <button class="btn btn-outline-primary btn-sm"
+                                            hx-post="/customer/cart/update"
+                                            hx-vals='{"menu_item_id": "{{ item.id }}", "quantity": "{{ item_in_cart.quantity + 1 }}"}'
+                                            hx-target="#controls-{{ item.id }}"
+                                            hx-swap="outerHTML">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                {% else %}
+                                <button class="btn btn-primary"
+                                        hx-post="/customer/cart/add"
+                                        hx-vals='{"menu_item_id": {{ item.id }}, "quantity": 1}'
+                                        hx-target="#cartCount">
+                                    <i class="fas fa-plus me-1"></i> Add to Cart
+                                </button>
+                                {% endif %}
+                                {% else %}
+                                <button class="btn btn-secondary" disabled>
+                                    <i class="fas fa-times me-1"></i> Unavailable
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+            <h4>No Menu Items Available</h4>
+            <p class="text-muted">This service is currently updating its menu</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Cart Summary Sticky Bar -->
+{% set cart = request.session.get('cart', {}) %}
+{% if cart %}
+<div class="cart-summary-sticky">
+    <div class="card shadow-lg">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    <h6 class="mb-0">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        {{ cart|length }} item(s) in cart
+                    </h6>
+                </div>
+                <div class="col-md-4 text-center">
+                    <h5 class="mb-0 text-primary" id="cartTotal">
+                        ₹{{ cart.values()|map(attribute='price')|sum * cart.values()|map(attribute='quantity')|sum|default(0)|round(2) }}
+                    </h5>
+                    <small class="text-muted">Total amount</small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <a href="/customer/cart" class="btn btn-success me-2">
+                        <i class="fas fa-shopping-cart me-1"></i> View Cart
+                    </a>
+                    <a href="#checkoutModal" class="btn btn-primary" data-bs-toggle="modal">
+                        <i class="fas fa-bolt me-1"></i> Checkout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Checkout Modal -->
+<div class="modal fade" id="checkoutModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shopping-cart me-2"></i> Ready to Checkout?
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>You have {{ cart|length }} item(s) in your cart.</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    You'll be able to review your order and add delivery instructions on the next page.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Continue Shopping
+                </button>
+                <a href="/customer/cart" class="btn btn-primary">
+                    Proceed to Checkout
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Menu search functionality
+        const searchInput = document.getElementById('menuSearch');
+        const menuItems = document.querySelectorAll('.col-lg-6[data-item-name]');
+        
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            menuItems.forEach(item => {
+                const itemName = item.getAttribute('data-item-name').toLowerCase();
+                const isAvailable = item.getAttribute('data-item-available') === 'True';
+                const vegOnly = document.getElementById('vegOnly').checked;
+                const availableOnly = document.getElementById('availableOnly').checked;
+                
+                let shouldShow = true;
+                
+                // Apply search filter
+                if (searchTerm && !itemName.includes(searchTerm)) {
+                    shouldShow = false;
+                }
+                
+                // Apply availability filter
+                if (availableOnly && !isAvailable) {
+                    shouldShow = false;
+                }
+                
+                if (shouldShow) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+        
+        // Sort functionality
+        const sortSelect = document.getElementById('menuSort');
+        sortSelect.addEventListener('change', function() {
+            const container = document.getElementById('menuContainer');
+            const items = Array.from(container.querySelectorAll('.col-lg-6'));
+            
+            items.sort((a, b) => {
+                const sortBy = this.value;
+                
+                switch(sortBy) {
+                    case 'name':
+                        const nameA = a.getAttribute('data-item-name');
+                        const nameB = b.getAttribute('data-item-name');
+                        return nameA.localeCompare(nameB);
+                        
+                    case 'price_low':
+                        const priceA = parseFloat(a.getAttribute('data-item-price'));
+                        const priceB = parseFloat(b.getAttribute('data-item-price'));
+                        return priceA - priceB;
+                        
+                    case 'price_high':
+                        const priceA2 = parseFloat(a.getAttribute('data-item-price'));
+                        const priceB2 = parseFloat(b.getAttribute('data-item-price'));
+                        return priceB2 - priceA2;
+                        
+                    case 'popular':
+                        // For demo, sort by name
+                        const nameA2 = a.getAttribute('data-item-name');
+                        const nameB2 = b.getAttribute('data-item-name');
+                        return nameA2.localeCompare(nameB2);
+                        
+                    default:
+                        return 0;
+                }
+            });
+            
+            // Re-append sorted items
+            items.forEach(item => container.appendChild(item));
+        });
+        
+        // Filter checkboxes
+        const vegOnlyCheckbox = document.getElementById('vegOnly');
+        const availableOnlyCheckbox = document.getElementById('availableOnly');
+        
+        function applyFilters() {
+            searchInput.dispatchEvent(new Event('input'));
+        }
+        
+        vegOnlyCheckbox.addEventListener('change', applyFilters);
+        availableOnlyCheckbox.addEventListener('change', applyFilters);
+        
+        // Add animation to cart buttons
+        document.body.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'cartCount') {
+                // Animate cart count
+                const cartCount = document.getElementById('cartCount');
+                cartCount.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    cartCount.style.transform = 'scale(1)';
+                }, 300);
+                
+                // Show success toast
+                showToast('Item added to cart!', 'success');
+            }
+        });
+        
+        // Toast notification function
+        function showToast(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            `;
+            
+            const toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+            
+            const bsToast = new bootstrap.Toast(toast);
+            bsToast.show();
+            
+            toast.addEventListener('hidden.bs.toast', function() {
+                toastContainer.remove();
+            });
+        }
+        
+        // Add hover effects to menu cards
+        const menuCards = document.querySelectorAll('.menu-item-card');
+        menuCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+                this.style.borderColor = '#0d6efd';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.boxShadow = 'none';
+                this.style.borderColor = '#dee2e6';
+            });
+        });
+    });
+</script>
+
+<style>
+    .menu-item-card {
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .menu-item-card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .cart-summary-sticky {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        animation: slideUp 0.3s ease;
+    }
+    
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+    
+    .toast-container {
+        z-index: 1100;
+    }
+    
+    .quantity-controls .btn-group {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .quantity-controls .btn {
+        min-width: 35px;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+
+{% block title %}Shopping Cart - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="cart-header mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/customer/services">
+                    <i class="fas fa-concierge-bell me-1"></i> Services
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                Shopping Cart
+            </li>
+        </ol>
+    </nav>
+    
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-3">
+                <i class="fas fa-shopping-cart me-2 text-primary"></i>
+                Your Shopping Cart
+            </h1>
+            {% if error %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{ error }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/customer/services" class="btn btn-outline-primary">
+                <i class="fas fa-plus me-1"></i> Add More Items
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Cart Items -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i> Cart Items
+                    <span class="badge bg-primary ms-2">{{ cart_items|length }}</span>
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                {% if cart_items %}
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="width: 60px;"></th>
+                                <th>Item</th>
+                                <th class="text-center">Price</th>
+                                <th class="text-center">Quantity</th>
+                                <th class="text-center">Subtotal</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in cart_items %}
+                            <tr id="cart-row-{{ item.menu_item_id }}">
+                                <td>
+                                    {% if item.get('image_url') %}
+                                    <img src="{{ item.image_url }}" alt="{{ item.name }}" 
+                                         class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" 
+                                         style="width: 50px; height: 50px;">
+                                        <i class="fas fa-utensils text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <h6 class="mb-1">{{ item.name }}</h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-concierge-bell me-1"></i>
+                                        Service #{{ item.service_id }}
+                                    </small>
+                                </td>
+                                <td class="text-center">
+                                    <h6 class="mb-0">₹{{ item.price|round(2) }}</h6>
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button class="btn btn-outline-primary"
+                                                hx-post="/customer/cart/update"
+                                                hx-vals='{"menu_item_id": "{{ item.menu_item_id }}", "quantity": {{ item.quantity - 1 }}}'
+                                                hx-target="#cart-row-{{ item.menu_item_id }}"
+                                                hx-swap="outerHTML"
+                                                {% if item.quantity <= 1 %}disabled{% endif %}>
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <button class="btn btn-primary px-3" disabled>
+                                            {{ item.quantity }}
+                                        </button>
+                                        <button class="btn btn-outline-primary"
+                                                hx-post="/customer/cart/update"
+                                                hx-vals='{"menu_item_id": "{{ item.menu_item_id }}", "quantity": {{ item.quantity + 1 }}}'
+                                                hx-target="#cart-row-{{ item.menu_item_id }}"
+                                                hx-swap="outerHTML">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <h6 class="mb-0 text-primary">₹{{ item.subtotal|round(2) }}</h6>
+                                </td>
+                                <td class="text-center">
+                                    <button class="btn btn-sm btn-outline-danger"
+                                            hx-post="/customer/cart/remove"
+                                            hx-vals='{"menu_item_id": "{{ item.menu_item_id }}"}'
+                                            hx-target="#cart-row-{{ item.menu_item_id }}"
+                                            hx-swap="outerHTML"
+                                            hx-confirm="Remove this item from cart?">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Empty Cart Warning -->
+                {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
+                    <h4>Your cart is empty</h4>
+                    <p class="text-muted">Add some delicious items to get started</p>
+                    <a href="/customer/services" class="btn btn-primary">
+                        <i class="fas fa-concierge-bell me-1"></i> Browse Services
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if cart_items %}
+            <div class="card-footer">
+                <div class="row">
+                    <div class="col-md-6">
+                        <button class="btn btn-outline-danger"
+                                hx-post="/customer/cart/clear"
+                                hx-target=".card-body"
+                                hx-swap="innerHTML"
+                                hx-confirm="Clear all items from cart?">
+                            <i class="fas fa-trash me-1"></i> Clear Cart
+                        </button>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <a href="/customer/services" class="btn btn-outline-primary">
+                            <i class="fas fa-plus me-1"></i> Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Delivery Instructions -->
+        {% if cart_items %}
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-sticky-note me-2"></i> Delivery Instructions
+                </h5>
+            </div>
+            <div class="card-body">
+                <form id="deliveryForm">
+                    <div class="mb-3">
+                        <label for="specialInstructions" class="form-label">
+                            Special Instructions (Optional)
+                        </label>
+                        <textarea class="form-control" id="specialInstructions" 
+                                  rows="3" placeholder="E.g.: No onions, extra spicy, call before delivery..."></textarea>
+                        <div class="form-text">Any special requests for your order</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="deliveryAddress" class="form-label">
+                            <i class="fas fa-home me-1"></i> Delivery Address
+                        </label>
+                        <textarea class="form-control" id="deliveryAddress" 
+                                  rows="3" required>{{ customer.address or '' }}</textarea>
+                        <div class="form-text">Please ensure your address is correct</div>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="saveAddress">
+                        <label class="form-check-label" for="saveAddress">
+                            Save this as my default delivery address
+                        </label>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Order Summary -->
+    <div class="col-lg-4">
+        <div class="card sticky-top" style="top: 100px;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-receipt me-2"></i> Order Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span id="subtotal">₹{{ total|round(2) }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Charge</span>
+                        <span>
+                            {% if total >= 300 %}
+                            <span class="text-success">FREE</span>
+                            {% else %}
+                            ₹30.00
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Service Tax</span>
+                        <span>₹{{ (total * 0.05)|round(2) }}</span>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="d-flex justify-content-between mb-3">
+                        <h5 class="mb-0">Total</h5>
+                        <h4 class="mb-0 text-primary" id="grandTotal">
+                            ₹{{ (total + (total * 0.05) + (30 if total < 300 else 0))|round(2) }}
+                        </h4>
+                    </div>
+                    
+                    <div class="alert alert-success small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        {% if total >= 300 %}
+                        <strong>Free delivery</strong> applied on orders above ₹300
+                        {% else %}
+                        Add ₹{{ (300 - total)|round(2) }} more for <strong>free delivery</strong>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Promo Code -->
+                <div class="mb-4">
+                    <label class="form-label">Promo Code</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" 
+                               placeholder="Enter promo code" id="promoCode">
+                        <button class="btn btn-outline-primary" type="button" id="applyPromo">
+                            Apply
+                        </button>
+                    </div>
+                    <div class="form-text">Try: WELCOME20 for 20% off</div>
+                </div>
+                
+                <!-- Payment Options -->
+                <div class="mb-4">
+                    <h6 class="mb-3">
+                        <i class="fas fa-credit-card me-2"></i> Payment Method
+                    </h6>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" 
+                               name="paymentMethod" id="cod" checked>
+                        <label class="form-check-label" for="cod">
+                            <i class="fas fa-money-bill-wave me-1"></i> Cash on Delivery
+                        </label>
+                    </div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" 
+                               name="paymentMethod" id="online">
+                        <label class="form-check-label" for="online">
+                            <i class="fas fa-credit-card me-1"></i> Online Payment
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" 
+                               name="paymentMethod" id="wallet">
+                        <label class="form-check-label" for="wallet">
+                            <i class="fas fa-wallet me-1"></i> Bite Me Buddy Wallet
+                            <span class="badge bg-info ms-1">1,250 pts</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Place Order Button -->
+                {% if cart_items %}
+                <div class="d-grid">
+                    <button type="button" class="btn btn-success btn-lg" 
+                            id="placeOrderBtn" data-bs-toggle="modal" 
+                            data-bs-target="#confirmOrderModal">
+                        <i class="fas fa-bolt me-1"></i> Place Order
+                    </button>
+                </div>
+                {% endif %}
+                
+                <!-- Security Note -->
+                <div class="alert alert-info small mt-4">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    <strong>Secure Ordering:</strong> Your payment information is protected
+                </div>
+            </div>
+        </div>
+        
+        <!-- Order Support -->
+        <div class="card mt-4">
+            <div class="card-body">
+                <h6 class="mb-3">
+                    <i class="fas fa-headset me-2"></i> Need Help?
+                </h6>
+                <p class="small mb-2">
+                    <i class="fas fa-phone me-1 text-primary"></i>
+                    <strong>24/7 Support:</strong> 1800-123-4567
+                </p>
+                <p class="small mb-0">
+                    <i class="fas fa-envelope me-1 text-primary"></i>
+                    <strong>Email:</strong> support@bitemebuddy.com
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Order Modal -->
+<div class="modal fade" id="confirmOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-shopping-bag me-2"></i> Confirm Your Order
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-shopping-cart fa-3x text-primary mb-3"></i>
+                    <h5>Ready to Order?</h5>
+                </div>
+                
+                <div class="order-summary mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Items:</span>
+                        <span>{{ cart_items|length }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal:</span>
+                        <span>₹{{ total|round(2) }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery:</span>
+                        <span>
+                            {% if total >= 300 %}
+                            FREE
+                            {% else %}
+                            ₹30.00
+                            {% endif %}
+                        </span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <strong>Total:</strong>
+                        <strong class="text-primary">
+                            ₹{{ (total + (total * 0.05) + (30 if total < 300 else 0))|round(2) }}
+                        </strong>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Please review your delivery address and instructions before confirming.
+                </div>
+                
+                <form method="POST" action="/customer/order/place" id="orderForm">
+                    <input type="hidden" name="address" id="formAddress">
+                    <input type="hidden" name="special_instructions" id="formInstructions">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Review Order
+                </button>
+                <button type="button" class="btn btn-primary" id="confirmOrderFinal">
+                    <i class="fas fa-check me-1"></i> Confirm & Place Order
+                </button>
+            </div>
+        </div>
+    </div>
+</script>
+</html>

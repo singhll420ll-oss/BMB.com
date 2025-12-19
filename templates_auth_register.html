@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}Register - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-plus me-2"></i>
+                    Create Your Account
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
+                <form method="POST" action="/auth/register" id="registerForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="name" class="form-label">
+                                <i class="fas fa-user me-1"></i> Full Name *
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   required minlength="2" maxlength="100">
+                            <div class="form-text">As per government ID</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-at me-1"></i> Username *
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   required minlength="3" maxlength="50">
+                            <div class="form-text">Choose a unique username</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-1"></i> Email Address *
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="form-text">We'll never share your email</div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="phone" class="form-label">
+                                <i class="fas fa-phone me-1"></i> Mobile Number *
+                            </label>
+                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                   required pattern="[6-9][0-9]{9}" maxlength="10">
+                            <div class="form-text">10-digit Indian mobile number</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label">
+                            <i class="fas fa-home me-1"></i> Delivery Address *
+                        </label>
+                        <textarea class="form-control" id="address" name="address" 
+                                  rows="3" required></textarea>
+                        <div class="form-text">Your primary delivery address</div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-1"></i> Password *
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" 
+                                   required minlength="8">
+                            <div class="progress mt-2" style="height: 5px;">
+                                <div class="progress-bar" id="passwordStrength" role="progressbar"></div>
+                            </div>
+                            <div class="form-text">
+                                Must be at least 8 characters with letters and numbers
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="confirmPassword" class="form-label">
+                                <i class="fas fa-lock me-1"></i> Confirm Password *
+                            </label>
+                            <input type="password" class="form-control" id="confirmPassword" 
+                                   name="confirmPassword" required>
+                            <div class="form-text" id="passwordMatch"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="terms" name="terms" required>
+                        <label class="form-check-label" for="terms">
+                            I agree to the <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal">Terms & Conditions</a>
+                            and <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal">Privacy Policy</a> *
+                        </label>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="newsletter" name="newsletter" checked>
+                        <label class="form-check-label" for="newsletter">
+                            Receive updates and offers via email & SMS
+                        </label>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-success" id="submitBtn">
+                            <i class="fas fa-user-plus me-1"></i> Create Account
+                        </button>
+                        
+                        <a href="/auth/login" class="btn btn-outline-success">
+                            <i class="fas fa-sign-in-alt me-1"></i> Already have an account? Login
+                        </a>
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <!-- Registration Benefits -->
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-gift fa-2x text-primary mb-2"></i>
+                            <h6>Welcome Offer</h6>
+                            <p class="small">Get 20% off on your first order</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-bolt fa-2x text-warning mb-2"></i>
+                            <h6>Fast Checkout</h6>
+                            <p class="small">Save your details for faster orders</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-history fa-2x text-info mb-2"></i>
+                            <h6>Order History</h6>
+                            <p class="small">Track all your past orders</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Terms & Conditions Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Terms & Conditions</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Acceptance of Terms</h6>
+                <p>By registering with Bite Me Buddy, you agree to these terms and conditions.</p>
+                
+                <h6>2. Account Responsibility</h6>
+                <p>You are responsible for maintaining the confidentiality of your account credentials.</p>
+                
+                <h6>3. Order Policy</h6>
+                <p>All orders are subject to availability and restaurant confirmation.</p>
+                
+                <h6>4. Delivery Terms</h6>
+                <p>Delivery times are estimates and may vary based on traffic and weather conditions.</p>
+                
+                <h6>5. Cancellation Policy</h6>
+                <p>Orders can be cancelled within 5 minutes of placement without any charges.</p>
+                
+                <h6>6. Payment Terms</h6>
+                <p>All payments are processed securely. We accept multiple payment methods.</p>
+                
+                <h6>7. Liability</h6>
+                <p>Bite Me Buddy is not liable for any issues with food quality from restaurants.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Privacy Policy Modal -->
+<div class="modal fade" id="privacyModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <h6>1. Information Collection</h6>
+                <p>We collect information you provide during registration and ordering.</p>
+                
+                <h6>2. Use of Information</h6>
+                <p>Your information is used to process orders and improve our services.</p>
+                
+                <h6>3. Data Protection</h6>
+                <p>We implement security measures to protect your personal information.</p>
+                
+                <h6>4. Third-Party Sharing</h6>
+                <p>We do not sell your data. We may share with delivery partners for order fulfillment.</p>
+                
+                <h6>5. Cookies</h6>
+                <p>We use cookies to enhance your browsing experience.</p>
+                
+                <h6>6. Your Rights</h6>
+                <p>You can request access, correction, or deletion of your personal data.</p>
+                
+                <h6>7. Contact</h6>
+                <p>For privacy concerns, contact: privacy@bitemebuddy.com</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        const passwordStrength = document.getElementById('passwordStrength');
+        const passwordMatch = document.getElementById('passwordMatch');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        // Password strength indicator
+        password.addEventListener('input', function() {
+            const strength = calculatePasswordStrength(this.value);
+            passwordStrength.style.width = strength.percentage + '%';
+            passwordStrength.className = 'progress-bar bg-' + strength.color;
+            passwordStrength.textContent = strength.text;
+        });
+        
+        // Password confirmation check
+        confirmPassword.addEventListener('input', function() {
+            if (this.value === password.value) {
+                passwordMatch.innerHTML = '<span class="text-success"><i class="fas fa-check"></i> Passwords match</span>';
+                confirmPassword.classList.remove('is-invalid');
+                confirmPassword.classList.add('is-valid');
+            } else {
+                passwordMatch.innerHTML = '<span class="text-danger"><i class="fas fa-times"></i> Passwords do not match</span>';
+                confirmPassword.classList.remove('is-valid');
+                confirmPassword.classList.add('is-invalid');
+            }
+        });
+        
+        // Form validation
+        document.getElementById('registerForm').addEventListener('submit', function(e) {
+            if (password.value !== confirmPassword.value) {
+                e.preventDefault();
+                alert('Passwords do not match!');
+                confirmPassword.focus();
+                return false;
+            }
+            
+            if (!document.getElementById('terms').checked) {
+                e.preventDefault();
+                alert('You must agree to the Terms & Conditions');
+                return false;
+            }
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Creating Account...';
+            submitBtn.disabled = true;
+        });
+        
+        // Phone number formatting
+        document.getElementById('phone').addEventListener('input', function(e) {
+            this.value = this.value.replace(/\D/g, '').slice(0, 10);
+        });
+        
+        // Calculate password strength
+        function calculatePasswordStrength(password) {
+            let score = 0;
+            
+            // Length check
+            if (password.length >= 8) score += 25;
+            if (password.length >= 12) score += 10;
+            
+            // Character variety
+            if (/[a-z]/.test(password)) score += 10;
+            if (/[A-Z]/.test(password)) score += 15;
+            if (/[0-9]/.test(password)) score += 20;
+            if (/[^A-Za-z0-9]/.test(password)) score += 20;
+            
+            // Determine strength level
+            let color, text;
+            if (score >= 80) {
+                color = 'success';
+                text = 'Strong';
+            } else if (score >= 60) {
+                color = 'info';
+                text = 'Good';
+            } else if (score >= 40) {
+                color = 'warning';
+                text = 'Fair';
+            } else {
+                color = 'danger';
+                text = 'Weak';
+            }
+            
+            return {
+                percentage: Math.min(score, 100),
+                color: color,
+                text: text
+            };
+        }
+        
+        // Auto-focus first field
+        document.getElementById('name').focus();
+    });
+</script>
+{% endblock %}

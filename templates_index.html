@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Bite Me Buddy{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/clock.css">
+{% endblock %}
+
+{% block content %}
+<div class="home-container">
+    <!-- Real-time Clock -->
+    <div class="clock-container text-center mb-5">
+        <h1 class="display-1 mb-3" id="realTimeClock">Loading...</h1>
+        <p class="text-muted">Indian Standard Time (IST)</p>
+        
+        <!-- Hidden admin edit mode -->
+        <div id="adminEditMode" class="mt-3 d-none">
+            <div class="card border-warning mx-auto" style="max-width: 300px;">
+                <div class="card-header bg-warning text-dark">
+                    <i class="fas fa-lock"></i> Admin Time Setting
+                </div>
+                <div class="card-body">
+                    <form id="adminTimeForm">
+                        <div class="mb-3">
+                            <label class="form-label">Set Time (3:43 only)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="adminHour" min="1" max="12" placeholder="3" required>
+                                <span class="input-group-text">:</span>
+                                <input type="number" class="form-control" id="adminMinute" min="0" max="59" placeholder="43" required>
+                                <select class="form-select" id="adminAmPm" required>
+                                    <option value="AM">AM</option>
+                                    <option value="PM">PM</option>
+                                </select>
+                            </div>
+                            <div class="form-text">Only 3:43 will trigger admin access</div>
+                        </div>
+                        <button type="submit" class="btn btn-warning w-100">
+                            <i class="fas fa-save me-1"></i> Save & Access Admin
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <a href="/auth/register" class="btn btn-primary btn-lg w-100 py-4">
+                    <i class="fas fa-user-plus fa-2x mb-2"></i><br>
+                    New Registration
+                </a>
+            </div>
+            
+            <div class="col-md-4">
+                <a href="/auth/login?role=customer" class="btn btn-success btn-lg w-100 py-4">
+                    <i class="fas fa-sign-in-alt fa-2x mb-2"></i><br>
+                    Already Registered<br>
+                    <small>(Customer Login)</small>
+                </a>
+            </div>
+            
+            <div class="col-md-4">
+                <a href="/auth/login?role=team_member" class="btn btn-info btn-lg w-100 py-4">
+                    <i class="fas fa-users fa-2x mb-2"></i><br>
+                    Team Member Login
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="features mt-5 pt-5">
+        <h2 class="text-center mb-4">Why Choose Bite Me Buddy?</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-bolt fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Fast Delivery</h5>
+                        <p class="card-text">Get your food delivered hot and fresh in under 30 minutes.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Secure OTP Delivery</h5>
+                        <p class="card-text">Every delivery is verified with a secure OTP system.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="fas fa-mobile-alt fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Mobile Friendly</h5>
+                        <p class="card-text">Order from any device with our responsive design.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/clock.js"></script>
+<script>
+    // Secret admin access detection
+    document.addEventListener('DOMContentLoaded', function() {
+        const clockElement = document.getElementById('realTimeClock');
+        
+        // Variables for secret combination
+        let longPressTimer = null;
+        let tapCount = 0;
+        let isLongPressing = false;
+        let longPressStartTime = null;
+        
+        // Long press detection (15 seconds)
+        clockElement.addEventListener('mousedown', function(e) {
+            if (e.button === 0) { // Left mouse button
+                longPressStartTime = Date.now();
+                isLongPressing = true;
+                
+                longPressTimer = setTimeout(function() {
+                    if (isLongPressing) {
+                        // Long press completed (15 seconds)
+                        console.log('Long press detected');
+                    }
+                }, 15000); // 15 seconds
+            }
+        });
+        
+        // Touch support for mobile
+        clockElement.addEventListener('touchstart', function(e) {
+            longPressStartTime = Date.now();
+            isLongPressing = true;
+            
+            longPressTimer = setTimeout(function() {
+                if (isLongPressing) {
+                    console.log('Long press detected (touch)');
+                }
+            }, 15000);
+        });
+        
+        // End long press
+        function endLongPress() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+            isLongPressing = false;
+            
+            // Check if long press was at least 15 seconds
+            if (longPressStartTime && (Date.now() - longPressStartTime) >= 15000) {
+                // Long press requirement met, now wait for taps
+                setTimeout(function() {
+                    if (tapCount >= 5) {
+                        // Secret combination complete!
+                        showAdminEditMode();
+                    }
+                    tapCount = 0; // Reset tap count
+                }, 1000); // Give 1 second to complete taps
+            }
+            longPressStartTime = null;
+        }
+        
+        clockElement.addEventListener('mouseup', endLongPress);
+        clockElement.addEventListener('mouseleave', endLongPress);
+        clockElement.addEventListener('touchend', endLongPress);
+        clockElement.addEventListener('touchcancel', endLongPress);
+        
+        // Tap detection
+        clockElement.addEventListener('click', function(e) {
+            if (isLongPressing) {
+                // Only count taps during long press
+                tapCount++;
+                console.log('Tap count:', tapCount);
+                
+                if (tapCount >= 5 && (Date.now() - longPressStartTime) >= 15000) {
+                    // Secret combination complete!
+                    showAdminEditMode();
+                }
+            }
+        });
+        
+        // Show admin edit mode
+        function showAdminEditMode() {
+            const editMode = document.getElementById('adminEditMode');
+            editMode.classList.remove('d-none');
+            editMode.scrollIntoView({ behavior: 'smooth' });
+            
+            // Reset variables
+            tapCount = 0;
+            isLongPressing = false;
+            
+            // Show success message (hidden from user)
+            console.log('Secret admin access activated');
+        }
+        
+        // Admin time form submission
+        document.getElementById('adminTimeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const hour = parseInt(document.getElementById('adminHour').value);
+            const minute = parseInt(document.getElementById('adminMinute').value);
+            const amPm = document.getElementById('adminAmPm').value;
+            
+            // Check if time is exactly 3:43
+            if (hour === 3 && minute === 43) {
+                // Redirect to admin login
+                window.location.href = '/auth/admin-login';
+            } else {
+                // Hide edit mode without any feedback
+                document.getElementById('adminEditMode').classList.add('d-none');
+                // Reset form
+                this.reset();
+            }
+        });
+        
+        // Prevent context menu on clock
+        clockElement.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+    });
+</script>
+{% endblock %}

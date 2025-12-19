@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    {% if role == 'team_member' %}
+                        Team Member Login
+                    {% else %}
+                        Customer Login
+                    {% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ error }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endif %}
+                
+                <form method="POST" action="/auth/login">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">
+                            <i class="fas fa-user me-1"></i> Username
+                        </label>
+                        <input type="text" class="form-control" id="username" name="username" 
+                               required autofocus>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">
+                            <i class="fas fa-lock me-1"></i> Password
+                        </label>
+                        <input type="password" class="form-control" id="password" name="password" 
+                               required>
+                    </div>
+                    
+                    {% if role %}
+                    <input type="hidden" name="role" value="{{ role }}">
+                    {% else %}
+                    <div class="mb-3">
+                        <label for="role" class="form-label">
+                            <i class="fas fa-user-tag me-1"></i> Login As
+                        </label>
+                        <select class="form-select" id="role" name="role">
+                            <option value="customer" selected>Customer</option>
+                            <option value="team_member">Team Member</option>
+                        </select>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">Remember me</label>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-sign-in-alt me-1"></i> Login
+                        </button>
+                        
+                        {% if role != 'team_member' %}
+                        <a href="/auth/register" class="btn btn-outline-primary">
+                            <i class="fas fa-user-plus me-1"></i> New Customer? Register Here
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-2">Forgot your password?</p>
+                    <button class="btn btn-link" data-bs-toggle="modal" data-bs-target="#resetPasswordModal">
+                        Reset Password
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Login Info Cards -->
+        <div class="row mt-4">
+            {% if role == 'team_member' %}
+            <div class="col-12">
+                <div class="card border-info">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-info-circle me-1"></i> Team Member Login Info
+                        </h6>
+                        <p class="card-text small mb-0">
+                            • Use your username and password provided by admin<br>
+                            • Track assigned orders and delivery status<br>
+                            • Access team plans and announcements
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="col-md-6">
+                <div class="card border-success">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-utensils me-1"></i> Customer Benefits
+                        </h6>
+                        <p class="card-text small mb-0">
+                            • Order from multiple services<br>
+                            • Track order history<br>
+                            • Secure OTP delivery
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-warning">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-question-circle me-1"></i> Need Help?
+                        </h6>
+                        <p class="card-text small mb-0">
+                            • Contact: 1800-123-4567<br>
+                            • Email: support@bitemebuddy.com<br>
+                            • 24/7 Customer Support
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Please contact your administrator or customer support to reset your password.</p>
+                <div class="alert alert-info">
+                    <i class="fas fa-phone me-1"></i> Support: 1800-123-4567<br>
+                    <i class="fas fa-envelope me-1"></i> Email: support@bitemebuddy.com
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

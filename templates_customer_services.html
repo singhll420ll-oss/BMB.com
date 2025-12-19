@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Services - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="services-header mb-5">
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-3">
+                <i class="fas fa-concierge-bell me-2 text-primary"></i>
+                Our Food Services
+            </h1>
+            <p class="lead text-muted">
+                Choose from our curated selection of food services
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Search services..." 
+                       id="serviceSearch">
+                <button class="btn btn-outline-secondary" type="button">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Services Grid -->
+<div class="row g-4" id="servicesContainer">
+    {% for service in services %}
+    <div class="col-lg-4 col-md-6">
+        <div class="card service-card h-100" data-service-name="{{ service.name|lower }}">
+            {% if service.image_url %}
+            <img src="{{ service.image_url }}" class="card-img-top service-image" 
+                 alt="{{ service.name }}" style="height: 200px; object-fit: cover;">
+            {% else %}
+            <div class="service-image-placeholder bg-light d-flex align-items-center justify-content-center" 
+                 style="height: 200px;">
+                <i class="fas fa-utensils fa-3x text-muted"></i>
+            </div>
+            {% endif %}
+            
+            <div class="card-body">
+                <h5 class="card-title">
+                    {{ service.name }}
+                    {% if loop.index <= 3 %}
+                    <span class="badge bg-warning ms-2">Popular</span>
+                    {% endif %}
+                </h5>
+                
+                <p class="card-text text-muted">
+                    {% if service.description %}
+                        {{ service.description|truncate(100) }}
+                    {% else %}
+                        Delicious offerings from our expert chefs
+                    {% endif %}
+                </p>
+                
+                <div class="service-stats small text-muted mb-3">
+                    <span class="me-3">
+                        <i class="fas fa-clock me-1"></i> 25-35 mins
+                    </span>
+                    <span>
+                        <i class="fas fa-star me-1 text-warning"></i> 4.5
+                    </span>
+                </div>
+            </div>
+            
+            <div class="card-footer bg-transparent border-top-0">
+                <div class="d-grid">
+                    <a href="/customer/service/{{ service.id }}" class="btn btn-primary">
+                        <i class="fas fa-eye me-1"></i> View Menu
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-concierge-bell fa-3x text-muted mb-3"></i>
+            <h4>No Services Available</h4>
+            <p class="text-muted">Check back soon for new services</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Service Categories -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="h4 mb-4">
+            <i class="fas fa-tags me-2"></i> Service Categories
+        </h3>
+        
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="category-card p-3 rounded text-center">
+                    <i class="fas fa-pizza-slice fa-2x text-primary mb-2"></i>
+                    <h6>Italian</h6>
+                    <p class="small text-muted mb-0">Pizza, Pasta & More</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="category-card p-3 rounded text-center">
+                    <i class="fas fa-drumstick-bite fa-2x text-danger mb-2"></i>
+                    <h6>Non-Veg</h6>
+                    <p class="small text-muted mb-0">Chicken, Mutton & More</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="category-card p-3 rounded text-center">
+                    <i class="fas fa-leaf fa-2x text-success mb-2"></i>
+                    <h6>Vegetarian</h6>
+                    <p class="small text-muted mb-0">Pure Veg Delights</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="category-card p-3 rounded text-center">
+                    <i class="fas fa-ice-cream fa-2x text-info mb-2"></i>
+                    <h6>Desserts</h6>
+                    <p class="small text-muted mb-0">Sweet Treats</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works -->
+<div class="card mt-5 border-info">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-info-circle me-2"></i> How It Works
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <div class="step-icon mb-3">
+                    <div class="bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-search fa-2x"></i>
+                    </div>
+                </div>
+                <h5>1. Browse Services</h5>
+                <p class="text-muted">Explore our food services and menus</p>
+            </div>
+            <div class="col-md-4">
+                <div class="step-icon mb-3">
+                    <div class="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-shopping-cart fa-2x"></i>
+                    </div>
+                </div>
+                <h5>2. Add to Cart</h5>
+                <p class="text-muted">Select items and add to your cart</p>
+            </div>
+            <div class="col-md-4">
+                <div class="step-icon mb-3">
+                    <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 60px; height: 60px;">
+                        <i class="fas fa-truck fa-2x"></i>
+                    </div>
+                </div>
+                <h5>3. Enjoy Delivery</h5>
+                <p class="text-muted">Track your order with OTP verification</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Service search functionality
+        const searchInput = document.getElementById('serviceSearch');
+        const serviceCards = document.querySelectorAll('.service-card');
+        
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            
+            serviceCards.forEach(card => {
+                const serviceName = card.getAttribute('data-service-name').toLowerCase();
+                const cardElement = card.closest('.col-lg-4');
+                
+                if (serviceName.includes(searchTerm) || searchTerm === '') {
+                    cardElement.style.display = 'block';
+                } else {
+                    cardElement.style.display = 'none';
+                }
+            });
+        });
+        
+        // Add hover effects to service cards
+        serviceCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px)';
+                this.style.transition = 'transform 0.3s ease';
+                this.style.boxShadow = '0 5px 15px rgba(0,0,0,0.1)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+                this.style.boxShadow = 'none';
+            });
+        });
+        
+        // Filter by category
+        const categoryCards = document.querySelectorAll('.category-card');
+        categoryCards.forEach(card => {
+            card.addEventListener('click', function() {
+                const category = this.querySelector('h6').textContent.toLowerCase();
+                searchInput.value = category;
+                searchInput.dispatchEvent(new Event('input'));
+            });
+            
+            // Add hover effect
+            card.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#f8f9fa';
+                this.style.cursor = 'pointer';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '';
+            });
+        });
+    });
+</script>
+
+<style>
+    .service-card {
+        transition: all 0.3s ease;
+        border: 1px solid #dee2e6;
+    }
+    
+    .service-card:hover {
+        border-color: #0d6efd;
+    }
+    
+    .service-image-placeholder {
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .category-card {
+        border: 1px solid #dee2e6;
+        transition: all 0.3s ease;
+    }
+    
+    .category-card:hover {
+        border-color: #0d6efd;
+        background-color: #f8f9fa;
+    }
+    
+    .step-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    .step-icon:hover {
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}

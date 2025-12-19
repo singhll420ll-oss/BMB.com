@@ -1,0 +1,840 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Bite Me Buddy{% endblock %}
+
+{% block content %}
+<div class="profile-header mb-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="/customer/dashboard">
+                    <i class="fas fa-home me-1"></i> Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">
+                My Profile
+            </li>
+        </ol>
+    </nav>
+    
+    <div class="row align-items-center">
+        <div class="col-md-8">
+            <h1 class="h2 mb-3">
+                <i class="fas fa-user-circle me-2 text-primary"></i>
+                My Profile
+            </h1>
+            <p class="text-muted">Manage your account information and preferences</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <button class="btn btn-outline-primary" data-bs-toggle="modal" 
+                    data-bs-target="#editProfileModal">
+                <i class="fas fa-edit me-1"></i> Edit Profile
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Profile Info -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i> Profile Information
+                </h5>
+            </div>
+            <div class="card-body text-center">
+                <div class="mb-4">
+                    <div class="avatar-container mb-3">
+                        <div class="avatar-placeholder bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                             style="width: 100px; height: 100px; font-size: 2.5rem;">
+                            {{ customer.name[0]|upper }}
+                        </div>
+                        <button class="btn btn-sm btn-outline-primary mt-2" 
+                                data-bs-toggle="modal" data-bs-target="#changeAvatarModal">
+                            <i class="fas fa-camera me-1"></i> Change Photo
+                        </button>
+                    </div>
+                    
+                    <h4 class="mb-1">{{ customer.name }}</h4>
+                    <p class="text-muted">
+                        <i class="fas fa-user-tag me-1"></i> Customer
+                    </p>
+                    
+                    <div class="badge bg-success mb-3">
+                        <i class="fas fa-check-circle me-1"></i> Verified Account
+                    </div>
+                </div>
+                
+                <div class="profile-details text-start">
+                    <div class="mb-3">
+                        <h6>
+                            <i class="fas fa-envelope me-2 text-primary"></i> Email
+                        </h6>
+                        <p class="mb-1">{{ customer.email }}</p>
+                        <small class="text-muted">Primary email address</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>
+                            <i class="fas fa-phone me-2 text-primary"></i> Mobile
+                        </h6>
+                        <p class="mb-1">{{ customer.phone }}</p>
+                        <small class="text-muted">Verified mobile number</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>
+                            <i class="fas fa-calendar-alt me-2 text-primary"></i> Member Since
+                        </h6>
+                        <p class="mb-1">{{ customer.created_at.strftime('%d %B %Y') }}</p>
+                        <small class="text-muted">Joined {{ customer.created_at|timesince }}</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <h6>
+                            <i class="fas fa-map-marker-alt me-2 text-primary"></i> Default Address
+                        </h6>
+                        <p class="mb-1">{{ customer.address or 'Not set' }}</p>
+                        <button class="btn btn-link btn-sm p-0" data-bs-toggle="modal" 
+                                data-bs-target="#editAddressModal">
+                            <small>Edit address</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Account Status -->
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-shield-alt me-2"></i> Account Security
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Password</span>
+                        <button class="btn btn-sm btn-outline-primary" 
+                                data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                            Change
+                        </button>
+                    </div>
+                    <div class="progress" style="height: 5px;">
+                        <div class="progress-bar bg-success" style="width: 100%;"></div>
+                    </div>
+                    <small class="text-muted">Last changed: 30 days ago</small>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" 
+                               id="twoFactor" checked>
+                        <label class="form-check-label" for="twoFactor">
+                            Two-Factor Authentication
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" 
+                               id="emailNotifications" checked>
+                        <label class="form-check-label" for="emailNotifications">
+                            Email Notifications
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-0">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" 
+                               id="smsNotifications" checked>
+                        <label class="form-check-label" for="smsNotifications">
+                            SMS Notifications
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Activity & Stats -->
+    <div class="col-lg-8">
+        <!-- Activity Stats -->
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i> Activity Statistics
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">Total Sessions</h6>
+                                        <h2 class="mb-0">{{ sessions }}</h2>
+                                    </div>
+                                    <i class="fas fa-sign-in-alt fa-2x text-primary opacity-75"></i>
+                                </div>
+                                <small class="text-muted">Times logged in</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">Online Time</h6>
+                                        <h2 class="mb-0">{{ total_minutes|int }}</h2>
+                                    </div>
+                                    <i class="fas fa-clock fa-2x text-success opacity-75"></i>
+                                </div>
+                                <small class="text-muted">Total minutes spent</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">Avg. Session</h6>
+                                        <h2 class="mb-0">
+                                            {% if sessions > 0 %}
+                                            {{ (total_minutes / sessions)|round(1) }}
+                                            {% else %}
+                                            0
+                                            {% endif %}
+                                        </h2>
+                                    </div>
+                                    <i class="fas fa-chart-bar fa-2x text-info opacity-75"></i>
+                                </div>
+                                <small class="text-muted">Minutes per session</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-0">Last Session</h6>
+                                        <h2 class="mb-0">Today</h2>
+                                    </div>
+                                    <i class="fas fa-history fa-2x text-warning opacity-75"></i>
+                                </div>
+                                <small class="text-muted">Most recent login</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Saved Addresses -->
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-map-marker-alt me-2"></i> Saved Addresses
+                </h5>
+                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" 
+                        data-bs-target="#addAddressModal">
+                    <i class="fas fa-plus me-1"></i> Add New
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card address-card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">Home</h6>
+                                    <span class="badge bg-primary">Default</span>
+                                </div>
+                                <p class="small mb-2">{{ customer.address }}</p>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card address-card mb-3">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="mb-0">Office</h6>
+                                    <span class="badge bg-secondary">Work</span>
+                                </div>
+                                <p class="small mb-2">Tech Park, Sector 62, Noida</p>
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button class="btn btn-link" data-bs-toggle="modal" 
+                            data-bs-target="#addAddressModal">
+                        <i class="fas fa-plus me-1"></i> Add another address
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loyalty Program -->
+        <div class="card">
+            <div class="card-header bg-warning">
+                <h5 class="mb-0 text-white">
+                    <i class="fas fa-crown me-2"></i> Loyalty Program
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h4 class="mb-2">1,250 Points</h4>
+                        <p class="text-muted mb-3">Earn points with every order and redeem for rewards!</p>
+                        
+                        <div class="progress mb-3" style="height: 10px;">
+                            <div class="progress-bar bg-warning" style="width: 50%;"></div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>Silver Member</span>
+                            <span>250 points to Gold</span>
+                            <span>Gold Member</span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 text-center">
+                        <div class="loyalty-badge bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                             style="width: 80px; height: 80px;">
+                            <i class="fas fa-crown fa-2x"></i>
+                        </div>
+                        <h6 class="mt-2 mb-0">Silver Tier</h6>
+                    </div>
+                </div>
+                
+                <hr class="my-4">
+                
+                <h6 class="mb-3">Recent Point Activity</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th class="text-end">Points</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Today</td>
+                                <td>Order #1234</td>
+                                <td class="text-end text-success">+50</td>
+                            </tr>
+                            <tr>
+                                <td>Yesterday</td>
+                                <td>Order #1233</td>
+                                <td class="text-end text-success">+75</td>
+                            </tr>
+                            <tr>
+                                <td>Jan 15</td>
+                                <td>Birthday Bonus</td>
+                                <td class="text-end text-success">+200</td>
+                            </tr>
+                            <tr>
+                                <td>Jan 10</td>
+                                <td>Order #1232</td>
+                                <td class="text-end text-success">+60</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="modal fade" id="editProfileModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i> Edit Profile
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editProfileForm">
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" class="form-control" 
+                               value="{{ customer.name }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" class="form-control" 
+                               value="{{ customer.email }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Mobile Number</label>
+                        <input type="tel" class="form-control" 
+                               value="{{ customer.phone }}" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" class="form-control">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select">
+                            <option selected>Prefer not to say</option>
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveProfile()">
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-lock me-2"></i> Change Password
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changePasswordForm">
+                    <div class="mb-3">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" class="form-control" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">New Password</label>
+                        <input type="password" class="form-control" required>
+                        <div class="form-text">Must be at least 8 characters</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Confirm New Password</label>
+                        <input type="password" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="changePassword()">
+                    Update Password
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Address Modal -->
+<div class="modal fade" id="addAddressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-map-marker-alt me-2"></i> Add New Address
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addAddressForm">
+                    <div class="mb-3">
+                        <label class="form-label">Address Type</label>
+                        <select class="form-select">
+                            <option>Home</option>
+                            <option>Office</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Complete Address</label>
+                        <textarea class="form-control" rows="3" required></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-control" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Pincode</label>
+                            <input type="text" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Landmark (Optional)</label>
+                        <input type="text" class="form-control">
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="makeDefault">
+                        <label class="form-check-label" for="makeDefault">
+                            Set as default delivery address
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="addAddress()">
+                    Save Address
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Address Modal -->
+<div class="modal fade" id="editAddressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i> Edit Address
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAddressForm">
+                    <div class="mb-3">
+                        <label class="form-label">Complete Address</label>
+                        <textarea class="form-control" rows="3" required>{{ customer.address }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">City</label>
+                            <input type="text" class="form-control" value="Your City" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Pincode</label>
+                            <input type="text" class="form-control" value="110001" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="updateAddress()">
+                    Update Address
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Change Avatar Modal -->
+<div class="modal fade" id="changeAvatarModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-camera me-2"></i> Change Profile Photo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <div class="avatar-preview mb-3">
+                        <div class="avatar-placeholder bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                             style="width: 100px; height: 100px; font-size: 2.5rem;">
+                            {{ customer.name[0]|upper }}
+                        </div>
+                    </div>
+                    
+                    <input type="file" class="form-control" id="avatarUpload" 
+                           accept="image/*" style="display: none;">
+                    
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-primary" 
+                                onclick="document.getElementById('avatarUpload').click()">
+                            <i class="fas fa-upload me-1"></i> Upload Photo
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" 
+                                onclick="removeAvatar()">
+                            <i class="fas fa-trash me-1"></i> Remove
+                        </button>
+                    </div>
+                    
+                    <div class="form-text mt-2">
+                        Supported formats: JPG, PNG, GIF. Max size: 2MB
+                    </div>
+                </div>
+                
+                <div class="avatar-suggestions">
+                    <h6 class="mb-3">Choose an avatar</h6>
+                    <div class="row g-2">
+                        {% for i in range(1, 9) %}
+                        <div class="col-3">
+                            <div class="avatar-option rounded-circle d-flex align-items-center justify-content-center"
+                                 style="width: 50px; height: 50px; background-color: #f0f0f0; cursor: pointer;"
+                                 onclick="selectAvatar('{{ i }}')">
+                                <span class="fs-5">{{ 'ABCDEFGH'[i-1] }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveAvatar()">
+                    Save Photo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle avatar upload
+        const avatarUpload = document.getElementById('avatarUpload');
+        avatarUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('File size must be less than 2MB');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatarPreview = document.querySelector('.avatar-preview');
+                    avatarPreview.innerHTML = `
+                        <img src="${e.target.result}" 
+                             class="rounded-circle" 
+                             style="width: 100px; height: 100px; object-fit: cover;">
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Add hover effects to address cards
+        const addressCards = document.querySelectorAll('.address-card');
+        addressCards.forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.boxShadow = 'none';
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+    
+    function saveProfile() {
+        // In real app, this would be an API call
+        showToast('Profile updated successfully!', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editProfileModal'));
+        modal.hide();
+    }
+    
+    function changePassword() {
+        // In real app, this would be an API call
+        showToast('Password changed successfully!', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('changePasswordModal'));
+        modal.hide();
+    }
+    
+    function addAddress() {
+        // In real app, this would be an API call
+        showToast('Address added successfully!', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addAddressModal'));
+        modal.hide();
+    }
+    
+    function updateAddress() {
+        // In real app, this would be an API call
+        showToast('Address updated successfully!', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editAddressModal'));
+        modal.hide();
+    }
+    
+    function selectAvatar(index) {
+        const avatarOptions = document.querySelectorAll('.avatar-option');
+        avatarOptions.forEach(option => option.classList.remove('selected'));
+        
+        const selected = document.querySelector(`.avatar-option:nth-child(${index})`);
+        selected.classList.add('selected');
+        
+        const letter = selected.querySelector('span').textContent;
+        const avatarPreview = document.querySelector('.avatar-preview');
+        avatarPreview.innerHTML = `
+            <div class="avatar-placeholder bg-primary text-white rounded-circle d-inline-flex align-items-center justify-content-center" 
+                 style="width: 100px; height: 100px; font-size: 2.5rem;">
+                ${letter}
+            </div>
+        `;
+    }
+    
+    function saveAvatar() {
+        // In real app, this would be an API call
+        showToast('Profile photo updated!', 'success');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('changeAvatarModal'));
+        modal.hide();
+    }
+    
+    function removeAvatar() {
+        // In real app, this would be an API call
+        showToast('Profile photo removed!', 'info');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('changeAvatarModal'));
+        modal.hide();
+    }
+    
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-bg-${type} border-0`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                    ${message}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        
+        const toastContainer = document.createElement('div');
+        toastContainer.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        toastContainer.appendChild(toast);
+        document.body.appendChild(toastContainer);
+        
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        toast.addEventListener('hidden.bs.toast', function() {
+            toastContainer.remove();
+        });
+    }
+</script>
+
+<style>
+    .avatar-placeholder {
+        transition: all 0.3s ease;
+    }
+    
+    .avatar-placeholder:hover {
+        transform: scale(1.05);
+    }
+    
+    .address-card {
+        transition: all 0.3s ease;
+        border: 1px solid #dee2e6;
+    }
+    
+    .address-card:hover {
+        border-color: #0d6efd;
+    }
+    
+    .loyalty-badge {
+        transition: all 0.3s ease;
+    }
+    
+    .loyalty-badge:hover {
+        transform: scale(1.1);
+    }
+    
+    .avatar-option {
+        transition: all 0.3s ease;
+    }
+    
+    .avatar-option:hover {
+        transform: scale(1.1);
+        background-color: #e9ecef !important;
+    }
+    
+    .avatar-option.selected {
+        background-color: #0d6efd !important;
+        color: white;
+    }
+    
+    .toast-container {
+        z-index: 1100;
+    }
+    
+    .progress {
+        border-radius: 10px;
+    }
+    
+    .progress-bar {
+        border-radius: 10px;
+    }
+    
+    @media (max-width: 768px) {
+        .btn-group {
+            width: 100%;
+        }
+        
+        .btn-group .btn {
+            flex: 1;
+        }
+    }
+</style>
+{% endblock %}
