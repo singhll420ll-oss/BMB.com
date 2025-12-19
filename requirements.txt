@@ -14,3 +14,4 @@ httpx==0.25.1
 twilio==8.13.0
 pillow==10.1.0
 itsdangerous==2.1.2
+structlog==23.1.0
