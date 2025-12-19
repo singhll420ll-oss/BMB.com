@@ -15,7 +15,7 @@ import structlog
 
 from core.config import settings
 from core.logging import setup_logging
-from .database import engine, Base
+from database import engine, Base
 from routers import auth, customer, admin, team_member, services, orders
 from core.exceptions import add_exception_handlers
 
