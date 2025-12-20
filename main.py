@@ -10,7 +10,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-import structlog
 
 from core.config import settings
 from core.logging import setup_logging
@@ -23,7 +22,6 @@ from core.exceptions import add_exception_handlers
 # --------------------------------------------------
 
 setup_logging()
-logger = structlog.get_logger(__name__)
 
 # --------------------------------------------------
 # LIFESPAN (Startup / Shutdown)
@@ -32,23 +30,21 @@ logger = structlog.get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # -------- STARTUP --------
-    logger.info(
-        "Starting Bite Me Buddy application",
-        env=settings.ENVIRONMENT,
-        debug=settings.DEBUG
+    print(
+        f"Starting Bite Me Buddy | ENV={settings.ENVIRONMENT} | DEBUG={settings.DEBUG}"
     )
 
     # Create upload directory
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
-    # 🔥 CREATE DATABASE TABLES (ASYNC SAFE)
+    # Create DB tables (async safe)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     yield
 
     # -------- SHUTDOWN --------
-    logger.info("Shutting down Bite Me Buddy application")
+    print("Shutting down Bite Me Buddy application")
     await engine.dispose()
 
 # --------------------------------------------------
@@ -134,6 +130,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG,
-        log_config=None
+        reload=settings.DEBUG
     )
