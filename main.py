@@ -11,17 +11,10 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
-from core.config import settings
-from core.logging import setup_logging
 from database import engine, Base
 from routers import auth, customer, admin, team_member, services, orders
+from core.config import settings
 from core.exceptions import add_exception_handlers
-
-# --------------------------------------------------
-# LOGGING
-# --------------------------------------------------
-
-setup_logging()
 
 # --------------------------------------------------
 # LIFESPAN (Startup / Shutdown)
@@ -30,16 +23,18 @@ setup_logging()
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # -------- STARTUP --------
-    print(
-        f"Starting Bite Me Buddy | ENV={settings.ENVIRONMENT} | DEBUG={settings.DEBUG}"
-    )
+    print(f"Starting Bite Me Buddy | ENV={settings.ENVIRONMENT} | DEBUG={settings.DEBUG}")
 
-    # Create upload directory
+    # Create upload directory if not exists
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
     # Create DB tables (async safe)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        print("Database tables created successfully")
+    except Exception as e:
+        print(f"Database setup failed: {e}")
 
     yield
 
@@ -102,15 +97,12 @@ app.include_router(services.router, prefix="/api/services", tags=["services"])
 app.include_router(orders.router, prefix="/api/orders", tags=["orders"])
 
 # --------------------------------------------------
-# ROUTES
+# BASIC ROUTES
 # --------------------------------------------------
 
 @app.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse(
-        "index.html",
-        {"request": request}
-    )
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/health")
 async def health_check():
@@ -121,7 +113,7 @@ async def health_check():
     }
 
 # --------------------------------------------------
-# LOCAL RUN
+# LOCAL DEVELOPMENT
 # --------------------------------------------------
 
 if __name__ == "__main__":
@@ -130,5 +122,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=settings.DEBUG
+        reload=False  # Render में reload=False रखना safe है
     )
