@@ -1,4 +1,3 @@
-
 """
 Bite Me Buddy - Main FastAPI Application
 Production-ready food ordering system
@@ -6,7 +5,7 @@ Production-ready food ordering system
 
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,27 +18,43 @@ from database import engine, Base
 from routers import auth, customer, admin, team_member, services, orders
 from core.exceptions import add_exception_handlers
 
-# Setup structured logging
+# --------------------------------------------------
+# LOGGING
+# --------------------------------------------------
+
 setup_logging()
 logger = structlog.get_logger(__name__)
 
+# --------------------------------------------------
+# LIFESPAN (Startup / Shutdown)
+# --------------------------------------------------
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan management"""
-    # Startup
-    logger.info("Starting Bite Me Buddy application", 
-                env=settings.ENVIRONMENT, debug=settings.DEBUG)
-    
-    # Create upload directory if not exists
+    # -------- STARTUP --------
+    logger.info(
+        "Starting Bite Me Buddy application",
+        env=settings.ENVIRONMENT,
+        debug=settings.DEBUG
+    )
+
+    # Create upload directory
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    
+
+    # 🔥 CREATE DATABASE TABLES (ASYNC SAFE)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     yield
-    
-    # Shutdown
+
+    # -------- SHUTDOWN --------
     logger.info("Shutting down Bite Me Buddy application")
     await engine.dispose()
 
-# Create FastAPI app
+# --------------------------------------------------
+# FASTAPI APP
+# --------------------------------------------------
+
 app = FastAPI(
     title="Bite Me Buddy",
     description="Professional Food Ordering System",
@@ -48,7 +63,10 @@ app = FastAPI(
     debug=settings.DEBUG
 )
 
-# Add middleware
+# --------------------------------------------------
+# MIDDLEWARE
+# --------------------------------------------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -62,16 +80,24 @@ app.add_middleware(
     allowed_hosts=settings.ALLOWED_HOSTS
 )
 
-# Add exception handlers
+# --------------------------------------------------
+# EXCEPTION HANDLERS
+# --------------------------------------------------
+
 add_exception_handlers(app)
 
-# Setup templates
+# --------------------------------------------------
+# TEMPLATES & STATIC
+# --------------------------------------------------
+
 templates = Jinja2Templates(directory="templates")
-
-# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.state.templates = templates
 
-# Include routers
+# --------------------------------------------------
+# ROUTERS
+# --------------------------------------------------
+
 app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
 app.include_router(customer.router, prefix="/api/customer", tags=["customer"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
@@ -79,22 +105,28 @@ app.include_router(team_member.router, prefix="/api/team", tags=["team"])
 app.include_router(services.router, prefix="/api/services", tags=["services"])
 app.include_router(orders.router, prefix="/api/orders", tags=["orders"])
 
-# Store templates in app state
-app.state.templates = templates
+# --------------------------------------------------
+# ROUTES
+# --------------------------------------------------
 
 @app.get("/")
 async def home(request: Request):
-    """Home page with secret clock"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request}
+    )
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     return {
         "status": "healthy",
         "service": "Bite Me Buddy",
         "version": "1.0.0"
     }
+
+# --------------------------------------------------
+# LOCAL RUN
+# --------------------------------------------------
 
 if __name__ == "__main__":
     import uvicorn
