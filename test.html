@@ -1,0 +1,150 @@
+<!-- templates/test.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page - Bite Me Buddy</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2193b0;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        button {
+            background: #2193b0;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #1a7a94;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Bite Me Buddy - Test Page</h1>
+        <p>This page verifies that the application is running correctly.</p>
+        
+        <div id="status-container">
+            <div class="status warning" id="loading-status">
+                ⏳ Loading status...
+            </div>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <button onclick="testDatabase()">Test Database Connection</button>
+            <button onclick="testHealth()" style="margin-left: 10px;">Test Health Check</button>
+            <button onclick="goHome()" style="margin-left: 10px; background: #6c757d;">Go to Home</button>
+        </div>
+        
+        <div id="results" style="margin-top: 20px;"></div>
+    </div>
+
+    <script>
+        // Test database connection
+        async function testDatabase() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="status warning">Testing database connection...</div>';
+            
+            try {
+                const response = await fetch('/api/test-db');
+                const data = await response.json();
+                
+                let statusClass = 'error';
+                if (data.success) {
+                    statusClass = 'success';
+                }
+                
+                resultsDiv.innerHTML = `
+                    <div class="status ${statusClass}">
+                        <strong>Database Test Results:</strong><br>
+                        Success: ${data.success ? '✅' : '❌'}<br>
+                        Message: ${data.message}<br>
+                        Database URL Set: ${data.database_url_set ? '✅' : '❌'}
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>Error:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Test health check
+        async function testHealth() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="status warning">Testing health check...</div>';
+            
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                resultsDiv.innerHTML = `
+                    <div class="status success">
+                        <strong>Health Check Results:</strong><br>
+                        Status: ${data.status}<br>
+                        Service: ${data.service}<br>
+                        Database: ${data.database}
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="status error">
+                        <strong>Error:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Go to home page
+        function goHome() {
+            window.location.href = '/';
+        }
+        
+        // Auto-test on page load
+        window.onload = function() {
+            setTimeout(testHealth, 1000);
+        };
+    </script>
+</body>
+</html>
