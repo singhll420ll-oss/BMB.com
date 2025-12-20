@@ -15,7 +15,7 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 # fallback for local
 if not DATABASE_URL:
-    DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+    DATABASE_URL = sqlite+aiosqlite:///./test.db
 
 # 🔥 VERY IMPORTANT FIX
 if DATABASE_URL.startswith("postgres://"):
