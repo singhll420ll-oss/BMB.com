@@ -16,7 +16,14 @@ DATABASE_URL = os.getenv(
     "sqlite+aiosqlite:///./test.db"
 )
 
-# Render PostgreSQL fix
+# --------------------------------------------------
+# RENDER POSTGRESQL ASYNC FIX (CRITICAL)
+# --------------------------------------------------
+# Handle all Render cases:
+# postgres://
+# postgresql://
+# sqlite (local)
+
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace(
         "postgres://",
@@ -24,8 +31,15 @@ if DATABASE_URL.startswith("postgres://"):
         1
     )
 
+elif DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace(
+        "postgresql://",
+        "postgresql+asyncpg://",
+        1
+    )
+
 # --------------------------------------------------
-# METADATA (Best practice)
+# METADATA
 # --------------------------------------------------
 
 metadata = MetaData(
@@ -50,7 +64,8 @@ engine = create_async_engine(
     pool_pre_ping=True,
     pool_recycle=300,
     connect_args=(
-        {"ssl": "require"} if DATABASE_URL.startswith("postgresql")
+        {"ssl": "require"}
+        if DATABASE_URL.startswith("postgresql")
         else {"check_same_thread": False}
     )
 )
@@ -81,7 +96,7 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 # --------------------------------------------------
-# SYNC ENGINE (Alembic / migrations)
+# SYNC ENGINE (ALEMBIC / MIGRATIONS)
 # --------------------------------------------------
 
 if DATABASE_URL.startswith("postgresql+asyncpg"):
@@ -90,19 +105,22 @@ if DATABASE_URL.startswith("postgresql+asyncpg"):
         "postgresql",
         1
     )
+
 elif DATABASE_URL.startswith("sqlite+aiosqlite"):
     SYNC_DATABASE_URL = DATABASE_URL.replace(
         "sqlite+aiosqlite",
         "sqlite",
         1
     )
+
 else:
     SYNC_DATABASE_URL = DATABASE_URL
 
 sync_engine = create_sync_engine(
     SYNC_DATABASE_URL,
     connect_args=(
-        {"ssl": "require"} if SYNC_DATABASE_URL.startswith("postgresql")
+        {"ssl": "require"}
+        if SYNC_DATABASE_URL.startswith("postgresql")
         else {"check_same_thread": False}
     )
 )
