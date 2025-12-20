@@ -20,8 +20,7 @@ if not DATABASE_URL:
 # 🔥 VERY IMPORTANT FIX
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace(
-        "postgres://",
-        "postgresql+asyncpg://",
+        postgresql+asyncpg://user:pass@host/dbname
         1
     )
 
