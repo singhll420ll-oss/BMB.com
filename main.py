@@ -1,126 +1,111 @@
 """
-Bite Me Buddy - Main FastAPI Application
-Production-ready food ordering system
+Bite Me Buddy - Food Ordering System
+Main FastAPI Application
 """
 
 import os
-from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from pathlib import Path
+from fastapi import FastAPI, Request, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
+from contextlib import asynccontextmanager
+import logging
 
-from database import engine, Base
-from routers import auth, customer, admin, team_member, services, orders
 from core.config import settings
-from core.exceptions import add_exception_handlers
+from core.logging import setup_logging
+from database import engine
+from routers import auth, users, services, orders, admin
+from models import Base
 
-# --------------------------------------------------
-# LIFESPAN (Startup / Shutdown)
-# --------------------------------------------------
+# Setup logging
+setup_logging()
+logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # -------- STARTUP --------
-    print(f"Starting Bite Me Buddy | ENV={settings.ENVIRONMENT} | DEBUG={settings.DEBUG}")
-
-    # Create upload directory if not exists
-    os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-
-    # Create DB tables (async-safe)
-    try:
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        print("Database tables created successfully")
-    except Exception as e:
-        print(f"Database setup failed: {e}")
-
+    """Lifespan context manager for startup/shutdown events"""
+    # Startup
+    logger.info("Starting Bite Me Buddy application")
+    
+    # Create uploads directory if it doesn't exist
+    uploads_dir = Path("static/uploads")
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Create tables if they don't exist (for Render deployment)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
     yield
+    
+    # Shutdown
+    logger.info("Shutting down Bite Me Buddy application")
 
-    # -------- SHUTDOWN --------
-    print("Shutting down Bite Me Buddy application")
-    await engine.dispose()
-
-# --------------------------------------------------
-# FASTAPI APP
-# --------------------------------------------------
-
+# Create FastAPI app
 app = FastAPI(
     title="Bite Me Buddy",
-    description="Professional Food Ordering System",
+    description="Food Ordering System",
     version="1.0.0",
     lifespan=lifespan,
-    debug=settings.DEBUG
+    docs_url="/api/docs" if settings.DEBUG else None,
+    redoc_url="/api/redoc" if settings.DEBUG else None,
 )
 
-# --------------------------------------------------
-# MIDDLEWARE
-# --------------------------------------------------
-
+# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
+    allow_origins=["*"],  # In production, specify your domain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=settings.ALLOWED_HOSTS
-)
-
-# --------------------------------------------------
-# EXCEPTION HANDLERS
-# --------------------------------------------------
-
-add_exception_handlers(app)
-
-# --------------------------------------------------
-# TEMPLATES & STATIC
-# --------------------------------------------------
-
-templates = Jinja2Templates(directory="templates")
+# Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
-app.state.templates = templates
 
-# --------------------------------------------------
-# ROUTERS
-# --------------------------------------------------
+# Setup templates
+templates = Jinja2Templates(directory="templates")
 
-app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
-app.include_router(customer.router, prefix="/api/customer", tags=["customer"])
-app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
-app.include_router(team_member.router, prefix="/api/team", tags=["team"])
+# Include routers
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(services.router, prefix="/api/services", tags=["services"])
 app.include_router(orders.router, prefix="/api/orders", tags=["orders"])
-
-# --------------------------------------------------
-# BASIC ROUTES
-# --------------------------------------------------
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 @app.get("/")
 async def home(request: Request):
+    """Home page with secret admin access via clock"""
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/health")
-async def health_check():
-    return {
-        "status": "healthy",
-        "service": "Bite Me Buddy",
-        "version": "1.0.0"
-    }
+@app.get("/admin-login")
+async def admin_login_page(request: Request):
+    """Admin login page (accessed via secret clock combination)"""
+    return templates.TemplateResponse("admin_login.html", {"request": request})
 
-# --------------------------------------------------
-# LOCAL DEVELOPMENT
-# --------------------------------------------------
+# Custom exception handlers
+@app.exception_handler(404)
+async def not_found_exception_handler(request: Request, exc):
+    return templates.TemplateResponse(
+        "404.html", 
+        {"request": request}, 
+        status_code=404
+    )
+
+@app.exception_handler(500)
+async def server_error_exception_handler(request: Request, exc):
+    logger.error(f"Server error: {exc}")
+    return templates.TemplateResponse(
+        "500.html", 
+        {"request": request}, 
+        status_code=500
+    )
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=True  # Development mode
+        port=int(os.getenv("PORT", 8000)),
+        reload=settings.DEBUG
     )
