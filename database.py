@@ -1,67 +1,50 @@
-import os
+"""
+Database configuration for Bite Me Buddy
+"""
+
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy.pool import NullPool
+import logging
 
-# --------------------------------------------------
-# DATABASE URL
-# --------------------------------------------------
+from core.config import settings
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+logger = logging.getLogger(__name__)
 
-# PostgreSQL async fix
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
-
-# --------------------------------------------------
-# METADATA
-# --------------------------------------------------
-
-metadata = MetaData(
-    naming_convention={
-        "ix": "ix_%(column_0_label)s",
-        "uq": "uq_%(table_name)s_%(column_0_name)s",
-        "ck": "ck_%(table_name)s_%(constraint_name)s",
-        "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
-        "pk": "pk_%(table_name)s",
-    }
+# Create async engine
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=settings.DEBUG,
+    poolclass=NullPool,  # Use NullPool for Render compatibility
+    pool_pre_ping=True,  # Enable connection health checks
 )
 
-Base = declarative_base(metadata=metadata)
-
-# --------------------------------------------------
-# ASYNC ENGINE (FastAPI)
-# --------------------------------------------------
-
-async_engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    pool_pre_ping=True,
-)
-
-# --------------------------------------------------
-# ASYNC SESSION
-# --------------------------------------------------
-
+# Create session factory
 AsyncSessionLocal = async_sessionmaker(
-    async_engine,
+    engine,
     class_=AsyncSession,
     expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
 )
 
+# Base class for models
+Base = declarative_base()
+
 async def get_db():
+    """Dependency to get database session"""
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
 
-# --------------------------------------------------
-# SYNC ENGINE (Alembic only)
-# --------------------------------------------------
-
-if DATABASE_URL.startswith("postgresql+asyncpg"):
-    SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg", "postgresql", 1)
-elif DATABASE_URL.startswith("sqlite+aiosqlite"):
-    SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite", 1)
-else:
-    SYNC_DATABASE_URL = DATABASE_URL
-
-sync_engine = create_engine(SYNC_DATABASE_URL, echo=False)
+async def init_db():
+    """Initialize database (create tables)"""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    logger.info("Database initialized")
