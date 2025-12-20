@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Bite Me Buddy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-container {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+    
+    .login-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+    
+    .login-header {
+        background: linear-gradient(45deg, #2193b0, #6dd5ed);
+        color: white;
+        padding: 30px 20px;
+        text-align: center;
+    }
+    
+    .login-body {
+        padding: 30px;
+    }
+    
+    .form-control {
+        padding: 12px 15px;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+        margin-bottom: 20px;
+    }
+    
+    .form-control:focus {
+        border-color: #2193b0;
+        box-shadow: 0 0 0 0.2rem rgba(33, 147, 176, 0.25);
+    }
+    
+    .btn-login {
+        background: linear-gradient(45deg, #2193b0, #6dd5ed);
+        border: none;
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        width: 100%;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-login:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(33, 147, 176, 0.3);
+    }
+    
+    .login-links {
+        text-align: center;
+        margin-top: 20px;
+    }
+    
+    .login-links a {
+        color: #2193b0;
+        text-decoration: none;
+    }
+    
+    .login-links a:hover {
+        text-decoration: underline;
+    }
+    
+    .alert {
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h3><i class="fas fa-sign-in-alt me-2"></i>Login</h3>
+            <p class="mb-0">Access your Bite Me Buddy account</p>
+        </div>
+        
+        <div class="login-body">
+            {% if error %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                {{ error }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+            
+            {% if message %}
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="fas fa-check-circle me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endif %}
+            
+            <form method="POST" action="/api/auth/login">
+                <div class="mb-3">
+                    <label for="username" class="form-label">
+                        <i class="fas fa-user me-1"></i>Username
+                    </label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="username" 
+                           name="username" 
+                           required
+                           placeholder="Enter your username">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock me-1"></i>Password
+                    </label>
+                    <input type="password" 
+                           class="form-control" 
+                           id="password" 
+                           name="password" 
+                           required
+                           placeholder="Enter your password">
+                </div>
+                
+                <input type="hidden" name="login_type" value="{{ login_type }}">
+                
+                <button type="submit" class="btn btn-login">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </button>
+            </form>
+            
+            <div class="login-links mt-4">
+                {% if login_type == 'customer' %}
+                    <p class="mb-2">
+                        Don't have an account? 
+                        <a href="/register">Register here</a>
+                    </p>
+                    <p class="mb-0">
+                        <a href="/">Back to Home</a>
+                    </p>
+                {% else %}
+                    <p class="mb-0">
+                        <a href="/">Back to Home</a>
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
