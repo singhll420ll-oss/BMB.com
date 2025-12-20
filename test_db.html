@@ -1,0 +1,235 @@
+<!-- templates/test_db.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Test - Bite Me Buddy</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 50px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .status-card {
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            transition: all 0.3s;
+        }
+        .status-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .status-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .btn-test {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        .btn-test:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+        pre {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center mb-4">
+            <h1 class="display-5 fw-bold">🧪 Database Connection Test</h1>
+            <p class="lead">Verify your PostgreSQL database connection</p>
+        </div>
+        
+        <div id="status-container">
+            <div class="status-card status-warning">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-3" role="status"></div>
+                    <div>
+                        <h5 class="mb-1">Checking initial status...</h5>
+                        <p class="mb-0 small">Please wait while we check the application status</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <button class="btn btn-test me-2" onclick="testHealth()">
+                <i class="fas fa-heartbeat me-2"></i>Test Health
+            </button>
+            <button class="btn btn-test me-2" onclick="testDatabase()">
+                <i class="fas fa-database me-2"></i>Test Database
+            </button>
+            <button class="btn btn-test" onclick="getDbInfo()">
+                <i class="fas fa-info-circle me-2"></i>Database Info
+            </button>
+        </div>
+        
+        <div class="result-box" id="result-box">
+            <h5><i class="fas fa-clipboard-list me-2"></i>Test Results</h5>
+            <div id="results"></div>
+        </div>
+        
+        <div class="mt-4 text-center">
+            <a href="/" class="btn btn-outline-primary">
+                <i class="fas fa-home me-2"></i>Go to Home
+            </a>
+        </div>
+    </div>
+
+    <!-- Font Awesome -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
+    <script>
+        // Initial status check
+        async function checkInitialStatus() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                let statusClass = 'status-error';
+                let icon = '❌';
+                
+                if (data.status === 'healthy') {
+                    statusClass = 'status-success';
+                    icon = '✅';
+                }
+                
+                document.getElementById('status-container').innerHTML = `
+                    <div class="status-card ${statusClass}">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3" style="font-size: 1.5rem;">${icon}</div>
+                            <div>
+                                <h5 class="mb-1">Application Status: ${data.status.toUpperCase()}</h5>
+                                <p class="mb-0 small">
+                                    Service: ${data.service} | 
+                                    Version: ${data.version} | 
+                                    Database: ${data.database}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                document.getElementById('status-container').innerHTML = `
+                    <div class="status-card status-error">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3" style="font-size: 1.5rem;">❌</div>
+                            <div>
+                                <h5 class="mb-1">Connection Failed</h5>
+                                <p class="mb-0 small">Could not connect to the server</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Test health endpoint
+        async function testHealth() {
+            showLoading('Testing health endpoint...');
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                showResult('Health Check', data, true);
+            } catch (error) {
+                showResult('Health Check', { error: error.message }, false);
+            }
+        }
+        
+        // Test database connection
+        async function testDatabase() {
+            showLoading('Testing database connection...');
+            try {
+                const response = await fetch('/api/db-info');
+                const data = await response.json();
+                showResult('Database Test', data, data.success);
+            } catch (error) {
+                showResult('Database Test', { error: error.message }, false);
+            }
+        }
+        
+        // Get database info
+        async function getDbInfo() {
+            showLoading('Getting database information...');
+            try {
+                const response = await fetch('/api/db-info');
+                const data = await response.json();
+                showResult('Database Information', data, data.success);
+            } catch (error) {
+                showResult('Database Information', { error: error.message }, false);
+            }
+        }
+        
+        // Show loading state
+        function showLoading(message) {
+            document.getElementById('result-box').style.display = 'block';
+            document.getElementById('results').innerHTML = `
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2">${message}</p>
+                </div>
+            `;
+        }
+        
+        // Show results
+        function showResult(title, data, success) {
+            const resultBox = document.getElementById('result-box');
+            const resultsDiv = document.getElementById('results');
+            
+            resultBox.style.display = 'block';
+            
+            const statusClass = success ? 'status-success' : 'status-error';
+            const statusIcon = success ? '✅' : '❌';
+            
+            resultsDiv.innerHTML = `
+                <div class="status-card ${statusClass} mb-3">
+                    <h6>${statusIcon} ${title}</h6>
+                    <p class="mb-0">${success ? 'Success' : 'Failed'}</p>
+                </div>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+        
+        // Run initial check
+        window.onload = function() {
+            checkInitialStatus();
+        };
+    </script>
+</body>
+</html>
