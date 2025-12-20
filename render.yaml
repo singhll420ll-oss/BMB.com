@@ -1,11 +1,13 @@
+# render.yaml
 services:
   - type: web
     name: bite-me-buddy
     env: python
     buildCommand: |
+      pip install --upgrade pip
       pip install -r requirements.txt
       python -m alembic upgrade head
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: gunicorn main:app --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -15,14 +17,23 @@ services:
         generateValue: true
       - key: DEBUG
         value: false
+      - key: WEB_CONCURRENCY
+        value: 2
       - key: TWILIO_SID
         sync: false
       - key: TWILIO_AUTH_TOKEN
         sync: false
       - key: TWILIO_PHONE_NUMBER
         sync: false
+    healthCheckPath: /
+    autoDeploy: true
+    disk:
+      name: uploads
+      mountPath: /opt/render/project/src/static/uploads
+      sizeGB: 1
 
 databases:
   - name: bite_me_buddy_db
     databaseName: bite_me_buddy
     user: bite_me_buddy_user
+    plan: free
