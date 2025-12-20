@@ -1,236 +1,210 @@
 """
-Authentication router
+Authentication router for Bite Me Buddy
 """
 
+from datetime import datetime, timedelta
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
-from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
-from datetime import timedelta
-import structlog
+import logging
 
 from database import get_db
-from models.user import User
-from schemas.auth import LoginRequest, Token, OTPVerifyRequest
-from crud.user import CRUDUser
-from core.security import create_access_token, verify_token
+from models import User
+from schemas import UserCreate, UserLogin, UserResponse
+from crud import create_user, get_user_by_username, create_user_session, update_user_session_logout
+from core.security import verify_password, create_access_token, verify_token, get_password_hash
 from core.config import settings
-from core.exceptions import AuthenticationError
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
-logger = structlog.get_logger(__name__)
+logger = logging.getLogger(__name__)
+security = HTTPBearer()
 
-# Store sessions in memory (in production, use Redis)
-user_sessions = {}
+async def get_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: AsyncSession = Depends(get_db)
+) -> User:
+    """Get current user from token"""
+    if credentials is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+    
+    token = credentials.credentials
+    payload = verify_token(token)
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+    
+    user = await get_user_by_username(db, user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    
+    # Store user in request state
+    request.state.user = user
+    return user
 
-@router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, role: str = "customer"):
-    """Render login page"""
-    return templates.TemplateResponse("auth/login.html", {
-        "request": request,
-        "role": role
-    })
+async def require_role(role: str):
+    """Dependency to require specific role"""
+    async def role_checker(user: User = Depends(get_current_user)):
+        if user.role != role and user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient permissions. Required role: {role}"
+            )
+        return user
+    return role_checker
 
-@router.get("/admin-login", response_class=HTMLResponse)
-async def admin_login_page(request: Request):
-    """Render admin login page (accessed via secret clock)"""
-    return templates.TemplateResponse("auth/admin_login.html", {"request": request})
-
-@router.get("/register", response_class=HTMLResponse)
-async def register_page(request: Request):
-    """Render registration page"""
-    return templates.TemplateResponse("auth/register.html", {"request": request})
+@router.post("/register", response_model=UserResponse)
+async def register(
+    user: UserCreate,
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_db)
+):
+    """Register a new user"""
+    # Check if username exists
+    existing_user = await get_user_by_username(db, user.username)
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+    
+    # Check if email exists
+    if user.email:
+        existing_email = await get_user_by_email(db, user.email)
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email already registered"
+            )
+    
+    # Check if phone exists
+    if user.phone:
+        existing_phone = await get_user_by_phone(db, user.phone)
+        if existing_phone:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Phone number already registered"
+            )
+    
+    # Create user
+    db_user = await create_user(db, user)
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": db_user.username},
+        expires_delta=access_token_expires
+    )
+    
+    # Create user session
+    await create_user_session(db, db_user.id)
+    
+    # Set cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        secure=not settings.DEBUG,
+        samesite="lax"
+    )
+    
+    logger.info(f"User registered: {db_user.username}")
+    return db_user
 
 @router.post("/login")
 async def login(
+    user_login: UserLogin,
     request: Request,
     response: Response,
-    login_data: LoginRequest,
     db: AsyncSession = Depends(get_db)
 ):
-    """User login"""
-    try:
-        # Authenticate user
-        user = await CRUDUser.authenticate(
-            db, login_data.username, login_data.password
+    """Login user"""
+    # Get user
+    user = await get_user_by_username(db, user_login.username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
         )
-        
-        if not user:
-            raise AuthenticationError("Invalid username or password")
-        
-        # Check role if specified
-        if login_data.role and user.role.value != login_data.role:
-            raise AuthenticationError(f"User is not a {login_data.role}")
-        
-        # Check if user is active
-        if not user.is_active:
-            raise AuthenticationError("Account is deactivated")
-        
-        # Create session
-        session = await CRUDUser.create_session(db, user.id)
-        
-        # Create access token
-        access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        access_token = create_access_token(
-            data={
-                "sub": user.username,
-                "user_id": user.id,
-                "role": user.role.value
-            },
-            expires_delta=access_token_expires
-        )
-        
-        # Store session
-        user_sessions[user.id] = {
-            "user_id": user.id,
-            "username": user.username,
-            "role": user.role.value,
-            "session_id": session.id,
-            "login_time": session.login_time
-        }
-        
-        # Set cookie
-        response.set_cookie(
-            key="access_token",
-            value=access_token,
-            httponly=True,
-            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=not settings.DEBUG,
-            samesite="lax"
-        )
-        
-        response.set_cookie(
-            key="user_id",
-            value=str(user.id),
-            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            secure=not settings.DEBUG,
-            samesite="lax"
-        )
-        
-        # Redirect based on role
-        if user.role.value == "customer":
-            return RedirectResponse(url="/customer/dashboard", status_code=303)
-        elif user.role.value == "team_member":
-            return RedirectResponse(url="/team/dashboard", status_code=303)
-        elif user.role.value == "admin":
-            return RedirectResponse(url="/admin/dashboard", status_code=303)
-        
-    except AuthenticationError as e:
-        logger.warning(f"Login failed: {str(e)}", username=login_data.username)
-        return templates.TemplateResponse("auth/login.html", {
-            "request": request,
-            "error": str(e),
-            "role": login_data.role or "customer"
-        })
     
-    except Exception as e:
-        logger.error(f"Login error: {str(e)}", username=login_data.username)
-        return templates.TemplateResponse("auth/login.html", {
-            "request": request,
-            "error": "Internal server error",
-            "role": login_data.role or "customer"
-        })
-
-@router.post("/register")
-async def register(
-    request: Request,
-    db: AsyncSession = Depends(get_db)
-):
-    """User registration"""
-    try:
-        form_data = await request.form()
-        
-        # Create user
-        user_data = {
-            "name": form_data.get("name"),
-            "username": form_data.get("username"),
-            "email": form_data.get("email"),
-            "phone": form_data.get("phone"),
-            "password": form_data.get("password"),
-            "address": form_data.get("address"),
-            "role": "customer"
-        }
-        
-        # Validate and create user
-        from schemas.user import CustomerCreate
-        user_in = CustomerCreate(**user_data)
-        user = await CRUDUser.create(db, user_in)
-        
-        # Auto-login after registration
-        login_data = LoginRequest(
-            username=user.username,
-            password=form_data.get("password")
+    # Verify password
+    if not verify_password(user_login.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
         )
-        
-        # Create response and call login
-        response = Response()
-        return await login(request, response, login_data, db)
-        
-    except Exception as e:
-        logger.error(f"Registration error: {str(e)}")
-        return templates.TemplateResponse("auth/register.html", {
-            "request": request,
-            "error": str(e)
-        })
+    
+    # Create access token
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username},
+        expires_delta=access_token_expires
+    )
+    
+    # Create user session
+    session = await create_user_session(db, user.id)
+    request.state.session_id = session.id
+    
+    # Set cookie
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        secure=not settings.DEBUG,
+        samesite="lax"
+    )
+    
+    logger.info(f"User logged in: {user.username}")
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(user)
+    }
 
-@router.get("/logout")
+@router.post("/logout")
 async def logout(
     request: Request,
     response: Response,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user)
 ):
-    """User logout"""
-    try:
-        # Get token from cookie
-        token = request.cookies.get("access_token")
-        user_id = request.cookies.get("user_id")
-        
-        if token and user_id:
-            # Verify token
-            payload = verify_token(token)
-            
-            # Update session logout time
-            if user_id in user_sessions:
-                session_id = user_sessions[user_id]["session_id"]
-                await CRUDUser.update_session(db, session_id)
-                del user_sessions[user_id]
-        
-        # Clear cookies
-        response.delete_cookie("access_token")
-        response.delete_cookie("user_id")
-        
-        # Redirect to home
-        return RedirectResponse(url="/", status_code=303)
-        
-    except Exception as e:
-        logger.error(f"Logout error: {str(e)}")
-        # Still clear cookies and redirect
-        response.delete_cookie("access_token")
-        response.delete_cookie("user_id")
-        return RedirectResponse(url="/", status_code=303)
-
-@router.post("/verify-otp")
-async def verify_otp(
-    otp_data: OTPVerifyRequest,
-    db: AsyncSession = Depends(get_db)
-):
-    """Verify OTP for order delivery"""
-    from crud.order import CRUDOrder
+    """Logout user"""
+    # Update session logout time
+    if hasattr(request.state, "session_id"):
+        await update_user_session_logout(db, request.state.session_id)
     
-    try:
-        success = await CRUDOrder.verify_otp(db, otp_data.order_id, otp_data.otp)
-        
-        if success:
-            return {"success": True, "message": "OTP verified successfully"}
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid OTP"
-            )
-            
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+    # Clear cookie
+    response.delete_cookie("access_token")
+    
+    logger.info(f"User logged out: {user.username}")
+    return {"message": "Successfully logged out"}
+
+@router.get("/me", response_model=UserResponse)
+async def get_current_user_info(
+    user: User = Depends(get_current_user)
+):
+    """Get current user information"""
+    return user
+
+@router.post("/change-password")
+async def change_password(
+    old_password
