@@ -1,0 +1,534 @@
+{% extends "base.html" %}
+
+{% block title %}{{ service.name }} Menu - Bite Me Buddy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .menu-header {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                    url('{% if service.image_url %}{{ service.image_url }}{% else %}https://images.unsplash.com/photo-1555939594-58d7cb561ad1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80{% endif %}');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 80px 0;
+        margin-bottom: 40px;
+        border-radius: 10px;
+    }
+    
+    .menu-item-card {
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .menu-item-card:hover {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        transform: translateY(-5px);
+    }
+    
+    .menu-item-image {
+        height: 180px;
+        object-fit: cover;
+        width: 100%;
+    }
+    
+    .menu-item-body {
+        padding: 20px;
+    }
+    
+    .menu-item-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 8px;
+    }
+    
+    .menu-item-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+        min-height: 40px;
+    }
+    
+    .menu-item-price {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #2193b0;
+        margin-bottom: 15px;
+    }
+    
+    .quantity-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .quantity-btn {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 1px solid #ddd;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .quantity-btn:hover {
+        background: #f5f5f5;
+        border-color: #2193b0;
+    }
+    
+    .quantity-display {
+        min-width: 40px;
+        text-align: center;
+        font-weight: bold;
+    }
+    
+    .btn-add-to-cart {
+        background: linear-gradient(45deg, #FF416C, #FF4B2B);
+        border: none;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    
+    .btn-add-to-cart:hover {
+        background: linear-gradient(45deg, #e63956, #e63a1f);
+        transform: scale(1.05);
+    }
+    
+    .btn-add-to-cart:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .cart-sidebar {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 20px;
+        position: sticky;
+        top: 20px;
+    }
+    
+    .cart-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #2193b0;
+    }
+    
+    .cart-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .cart-item-name {
+        flex: 1;
+        font-size: 0.9rem;
+    }
+    
+    .cart-item-quantity {
+        font-weight: bold;
+        margin: 0 10px;
+    }
+    
+    .cart-item-price {
+        font-weight: bold;
+        color: #2193b0;
+    }
+    
+    .cart-total {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #333;
+        margin-top: 20px;
+        padding-top: 10px;
+        border-top: 2px solid #2193b0;
+    }
+    
+    .btn-checkout {
+        background: linear-gradient(45deg, #2193b0, #6dd5ed);
+        border: none;
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: bold;
+        width: 100%;
+        margin-top: 20px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-checkout:hover {
+        background: linear-gradient(45deg, #1a7a94, #5bc0de);
+        transform: translateY(-2px);
+    }
+    
+    .btn-checkout:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+    
+    .no-image {
+        height: 180px;
+        background: linear-gradient(45deg, #f5f5f5, #e0e0e0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+    }
+    
+    .no-image i {
+        font-size: 2rem;
+    }
+    
+    .empty-cart {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+    
+    .empty-cart i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+    }
+    
+    @media (max-width: 768px) {
+        .menu-header {
+            padding: 50px 0;
+        }
+        
+        .cart-sidebar {
+            margin-top: 30px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="menu-header">
+    <div class="container">
+        <h1 class="display-5 fw-bold mb-3">{{ service.name }}</h1>
+        <p class="lead mb-0">{{ service.description or 'Explore our delicious menu' }}</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <!-- Menu Items Column -->
+        <div class="col-lg-8">
+            {% if menu_items %}
+            <div class="row">
+                {% for item in menu_items %}
+                <div class="col-md-6">
+                    <div class="menu-item-card" data-item-id="{{ item.id }}">
+                        {% if item.image_url %}
+                        <img src="{{ item.image_url }}" class="menu-item-image" alt="{{ item.name }}">
+                        {% else %}
+                        <div class="no-image">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="menu-item-body">
+                            <h5 class="menu-item-title">{{ item.name }}</h5>
+                            <p class="menu-item-description">
+                                {{ item.description or 'Delicious item from our kitchen' }}
+                            </p>
+                            <div class="menu-item-price">
+                                ₹{{ "%.2f"|format(item.price) }}
+                            </div>
+                            
+                            <div class="quantity-controls">
+                                <button class="quantity-btn minus" onclick="updateQuantity({{ item.id }}, -1)">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span class="quantity-display" id="quantity-{{ item.id }}">0</span>
+                                <button class="quantity-btn plus" onclick="updateQuantity({{ item.id }}, 1)">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                            
+                            <button class="btn-add-to-cart" 
+                                    onclick="addToCart({{ item.id }}, '{{ item.name }}', {{ item.price }})"
+                                    id="add-btn-{{ item.id }}"
+                                    disabled>
+                                <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state text-center py-5">
+                <i class="fas fa-utensils fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">Menu Coming Soon</h3>
+                <p class="text-muted">We're preparing our delicious menu for this service.</p>
+                <a href="/services" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Services
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Cart Sidebar -->
+        <div class="col-lg-4">
+            <div class="cart-sidebar">
+                <h5 class="cart-title">
+                    <i class="fas fa-shopping-cart me-2"></i>Your Cart
+                </h5>
+                
+                <div id="cart-items">
+                    <!-- Cart items will be dynamically added here -->
+                    <div class="empty-cart">
+                        <i class="fas fa-shopping-cart"></i>
+                        <p>Your cart is empty</p>
+                        <p class="small">Add items from the menu</p>
+                    </div>
+                </div>
+                
+                <div id="cart-total" style="display: none;">
+                    <div class="cart-total d-flex justify-content-between">
+                        <span>Total:</span>
+                        <span id="total-amount">₹0.00</span>
+                    </div>
+                    
+                    <button id="checkout-btn" class="btn-checkout" disabled>
+                        <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
+                    </button>
+                </div>
+                
+                <div class="mt-3">
+                    <a href="/services" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Services
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden form for checkout -->
+<form id="checkout-form" action="/cart/checkout" method="POST" style="display: none;">
+    <input type="hidden" name="service_id" value="{{ service.id }}">
+    <input type="hidden" name="cart_data" id="cart-data">
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Cart management
+let cart = {};
+let totalAmount = 0;
+
+// Initialize cart from localStorage
+function initCart() {
+    const savedCart = localStorage.getItem(`cart_service_{{ service.id }}`);
+    if (savedCart) {
+        cart = JSON.parse(savedCart);
+        updateCartDisplay();
+    }
+}
+
+// Update quantity for an item
+function updateQuantity(itemId, change) {
+    const quantityElement = document.getElementById(`quantity-${itemId}`);
+    let quantity = parseInt(quantityElement.textContent) + change;
+    
+    if (quantity < 0) quantity = 0;
+    if (quantity > 50) quantity = 50; // Maximum quantity limit
+    
+    quantityElement.textContent = quantity;
+    
+    // Update add to cart button
+    const addButton = document.getElementById(`add-btn-${itemId}`);
+    addButton.disabled = quantity === 0;
+}
+
+// Add item to cart
+function addToCart(itemId, itemName, itemPrice) {
+    const quantity = parseInt(document.getElementById(`quantity-${itemId}`).textContent);
+    
+    if (quantity > 0) {
+        if (cart[itemId]) {
+            cart[itemId].quantity += quantity;
+        } else {
+            cart[itemId] = {
+                name: itemName,
+                price: itemPrice,
+                quantity: quantity
+            };
+        }
+        
+        // Reset quantity display
+        document.getElementById(`quantity-${itemId}`).textContent = '0';
+        document.getElementById(`add-btn-${itemId}`).disabled = true;
+        
+        // Save to localStorage and update display
+        saveCart();
+        updateCartDisplay();
+        
+        // Show success message
+        showToast(`${quantity} × ${itemName} added to cart`, 'success');
+    }
+}
+
+// Update cart display
+function updateCartDisplay() {
+    const cartItemsElement = document.getElementById('cart-items');
+    const cartTotalElement = document.getElementById('cart-total');
+    const checkoutButton = document.getElementById('checkout-btn');
+    
+    if (Object.keys(cart).length === 0) {
+        cartItemsElement.innerHTML = `
+            <div class="empty-cart">
+                <i class="fas fa-shopping-cart"></i>
+                <p>Your cart is empty</p>
+                <p class="small">Add items from the menu</p>
+            </div>
+        `;
+        cartTotalElement.style.display = 'none';
+        checkoutButton.disabled = true;
+        return;
+    }
+    
+    // Build cart items HTML
+    let cartHTML = '';
+    totalAmount = 0;
+    
+    for (const [itemId, item] of Object.entries(cart)) {
+        const itemTotal = item.price * item.quantity;
+        totalAmount += itemTotal;
+        
+        cartHTML += `
+            <div class="cart-item">
+                <div class="cart-item-name">${item.name}</div>
+                <div class="cart-item-quantity">×${item.quantity}</div>
+                <div class="cart-item-price">₹${itemTotal.toFixed(2)}</div>
+                <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart(${itemId})">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+    }
+    
+    cartItemsElement.innerHTML = cartHTML;
+    document.getElementById('total-amount').textContent = `₹${totalAmount.toFixed(2)}`;
+    cartTotalElement.style.display = 'block';
+    checkoutButton.disabled = false;
+}
+
+// Remove item from cart
+function removeFromCart(itemId) {
+    if (cart[itemId]) {
+        const itemName = cart[itemId].name;
+        delete cart[itemId];
+        
+        saveCart();
+        updateCartDisplay();
+        
+        showToast(`${itemName} removed from cart`, 'warning');
+    }
+}
+
+// Save cart to localStorage
+function saveCart() {
+    localStorage.setItem(`cart_service_{{ service.id }}`, JSON.stringify(cart));
+}
+
+// Proceed to checkout
+function proceedToCheckout() {
+    if (Object.keys(cart).length === 0) {
+        showToast('Your cart is empty', 'error');
+        return;
+    }
+    
+    // Prepare cart data for submission
+    const cartData = {
+        service_id: {{ service.id }},
+        items: Object.entries(cart).map(([itemId, item]) => ({
+            menu_item_id: parseInt(itemId),
+            quantity: item.quantity
+        }))
+    };
+    
+    document.getElementById('cart-data').value = JSON.stringify(cartData);
+    document.getElementById('checkout-form').submit();
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    // Add to container
+    const container = document.getElementById('toast-container') || createToastContainer();
+    container.appendChild(toast);
+    
+    // Initialize and show toast
+    const bsToast = new bootstrap.Toast(toast);
+    bsToast.show();
+    
+    // Remove after hidden
+    toast.addEventListener('hidden.bs.toast', () => {
+        toast.remove();
+    });
+}
+
+// Create toast container if it doesn't exist
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    container.style.zIndex = '1055';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    initCart();
+    
+    // Set up checkout button
+    document.getElementById('checkout-btn').addEventListener('click', proceedToCheckout);
+    
+    // Set up HTMX for cart updates
+    htmx.on('htmx:afterSwap', function(event) {
+        if (event.detail.target.id === 'cart-items') {
+            updateCartDisplay();
+        }
+    });
+});
+</script>
+{% endblock %}
