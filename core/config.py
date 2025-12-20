@@ -1,7 +1,4 @@
-"""
-Configuration settings for Bite Me Buddy
-"""
-
+# core/config.py
 from typing import List, Optional
 from pydantic_settings import BaseSettings
 from pydantic import AnyHttpUrl, validator, PostgresDsn
@@ -11,10 +8,19 @@ class Settings(BaseSettings):
     # Application
     APP_NAME: str = "Bite Me Buddy"
     DEBUG: bool = False
-    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1"]
+    ALLOWED_HOSTS: List[str] = ["localhost", "127.0.0.1", "*.onrender.com"]
     
-    # Database
-    DATABASE_URL: PostgresDsn = "postgresql+asyncpg://user:password@localhost/bite_me_buddy"
+    # Database - YEH IMPORTANT CHANGE HAI
+    DATABASE_URL: str = "postgresql+asyncpg://user:password@localhost/bite_me_buddy"
+    
+    @validator("DATABASE_URL", pre=True)
+    def fix_database_url(cls, v):
+        """Convert Render's postgresql:// to postgresql+asyncpg://"""
+        if v and v.startswith("postgresql://"):
+            # Render se aata hai: postgresql://user:pass@host/db
+            # Convert karein: postgresql+asyncpg://user:pass@host/db
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
     
     # Security
     SECRET_KEY: str = "your-secret-key-here-change-in-production"
