@@ -1,6 +1,5 @@
 """
-Bite Me Buddy - Food Ordering System
-Main FastAPI Application
+Bite Me Buddy - Main Application
 """
 
 import os
@@ -11,35 +10,37 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import logging
+import asyncio
 
-from core.config import settings
-from core.logging import setup_logging
-from database import engine
-from routers import auth, users, services, orders, admin
-from models import Base
-
-# Setup logging
-setup_logging()
+# Setup basic logging
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup/shutdown events"""
     # Startup
-    logger.info("Starting Bite Me Buddy application")
+    logger.info("🚀 Starting Bite Me Buddy application...")
     
-    # Create uploads directory if it doesn't exist
+    # Create uploads directory
     uploads_dir = Path("static/uploads")
     uploads_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"📁 Uploads directory: {uploads_dir.absolute()}")
     
-    # Create tables if they don't exist (for Render deployment)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    # Test database connection
+    try:
+        from database import test_connection
+        if await test_connection():
+            logger.info("✅ Database connection successful")
+        else:
+            logger.warning("⚠️ Database connection test failed")
+    except Exception as e:
+        logger.error(f"❌ Database setup error: {e}")
     
     yield
     
     # Shutdown
-    logger.info("Shutting down Bite Me Buddy application")
+    logger.info("👋 Shutting down Bite Me Buddy application")
 
 # Create FastAPI app
 app = FastAPI(
@@ -47,14 +48,12 @@ app = FastAPI(
     description="Food Ordering System",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/api/docs" if settings.DEBUG else None,
-    redoc_url="/api/redoc" if settings.DEBUG else None,
 )
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify your domain
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -66,46 +65,52 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Setup templates
 templates = Jinja2Templates(directory="templates")
 
-# Include routers
-app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-app.include_router(users.router, prefix="/api/users", tags=["users"])
-app.include_router(services.router, prefix="/api/services", tags=["services"])
-app.include_router(orders.router, prefix="/api/orders", tags=["orders"])
-app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+# Health check endpoint (required by Render)
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Render"""
+    return {
+        "status": "healthy",
+        "service": "Bite Me Buddy",
+        "database": os.getenv("DATABASE_URL", "not_set")[:20] + "..." if os.getenv("DATABASE_URL") else "not_set"
+    }
 
 @app.get("/")
 async def home(request: Request):
-    """Home page with secret admin access via clock"""
+    """Home page"""
     return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/admin-login")
-async def admin_login_page(request: Request):
-    """Admin login page (accessed via secret clock combination)"""
-    return templates.TemplateResponse("admin_login.html", {"request": request})
+@app.get("/test")
+async def test_page(request: Request):
+    """Test page to verify templates are working"""
+    return templates.TemplateResponse("test.html", {"request": request})
 
-# Custom exception handlers
-@app.exception_handler(404)
-async def not_found_exception_handler(request: Request, exc):
-    return templates.TemplateResponse(
-        "404.html", 
-        {"request": request}, 
-        status_code=404
-    )
-
-@app.exception_handler(500)
-async def server_error_exception_handler(request: Request, exc):
-    logger.error(f"Server error: {exc}")
-    return templates.TemplateResponse(
-        "500.html", 
-        {"request": request}, 
-        status_code=500
-    )
+# Simple database test endpoint
+@app.get("/api/test-db")
+async def test_db_connection():
+    """Test database connection API endpoint"""
+    try:
+        from database import test_connection
+        success = await test_connection()
+        return {
+            "success": success,
+            "message": "Database connected successfully" if success else "Database connection failed",
+            "database_url_set": bool(os.getenv("DATABASE_URL"))
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "message": str(e),
+            "database_url_set": bool(os.getenv("DATABASE_URL"))
+        }
 
 if __name__ == "__main__":
     import uvicorn
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting server on port {port}")
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=int(os.getenv("PORT", 8000)),
-        reload=settings.DEBUG
+        port=port,
+        reload=False
     )
