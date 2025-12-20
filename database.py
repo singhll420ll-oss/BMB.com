@@ -7,11 +7,7 @@ from sqlalchemy import MetaData, create_engine
 # DATABASE URL
 # --------------------------------------------------
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-# fallback for local
-if not DATABASE_URL:
-    DATABASE_URL = "sqlite+aiosqlite:///./test.db"
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 
 # PostgreSQL async fix
 if DATABASE_URL.startswith("postgres://"):
@@ -37,7 +33,7 @@ Base = declarative_base(metadata=metadata)
 # ASYNC ENGINE (FastAPI)
 # --------------------------------------------------
 
-engine = create_async_engine(
+async_engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     pool_pre_ping=True,
@@ -48,7 +44,7 @@ engine = create_async_engine(
 # --------------------------------------------------
 
 AsyncSessionLocal = async_sessionmaker(
-    engine,
+    async_engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
@@ -68,4 +64,4 @@ elif DATABASE_URL.startswith("sqlite+aiosqlite"):
 else:
     SYNC_DATABASE_URL = DATABASE_URL
 
-sync_engine = create_engine(SYNC_DATABASE_URL)
+sync_engine = create_engine(SYNC_DATABASE_URL, echo=False)
