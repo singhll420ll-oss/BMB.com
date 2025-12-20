@@ -1,105 +1,222 @@
 {% extends "base.html" %}
 
-{% block title %}Home - Bite Me Buddy{% endblock %}
+{% block title %}Welcome to Bite Me Buddy{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="/static/css/clock.css">
+<style>
+    .hero-section {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                    url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 100px 0;
+        margin-bottom: 50px;
+        border-radius: 10px;
+    }
+    
+    .clock-container {
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 20px;
+        padding: 30px;
+        margin: 0 auto 40px;
+        max-width: 500px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    #digital-clock {
+        font-family: 'Courier New', monospace;
+        font-size: 3.5rem;
+        font-weight: bold;
+        text-align: center;
+        color: #00ff00;
+        text-shadow: 0 0 10px #00ff00;
+        margin: 0;
+        cursor: default;
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+    }
+    
+    .clock-label {
+        text-align: center;
+        color: #ccc;
+        font-size: 0.9rem;
+        margin-top: 10px;
+    }
+    
+    .action-buttons {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    .btn-action {
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        margin: 10px 0;
+        border-radius: 10px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .btn-register {
+        background: linear-gradient(45deg, #FF416C, #FF4B2B);
+        border: none;
+    }
+    
+    .btn-login {
+        background: linear-gradient(45deg, #2193b0, #6dd5ed);
+        border: none;
+    }
+    
+    .btn-team {
+        background: linear-gradient(45deg, #834d9b, #d04ed6);
+        border: none;
+    }
+    
+    /* Secret admin access styles - hidden */
+    .clock-edit-mode {
+        display: none;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    #clock-edit-form input {
+        background: #222;
+        color: #00ff00;
+        border: 1px solid #00ff00;
+        font-family: 'Courier New', monospace;
+        font-size: 1.5rem;
+        text-align: center;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .hero-section {
+            padding: 60px 0;
+        }
+        
+        #digital-clock {
+            font-size: 2.5rem;
+        }
+        
+        .btn-action {
+            font-size: 1.1rem;
+            padding: 12px 25px;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        #digital-clock {
+            font-size: 2rem;
+        }
+        
+        .clock-container {
+            padding: 20px;
+        }
+    }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="home-container">
-    <!-- Real-time Clock -->
-    <div class="clock-container text-center mb-5">
-        <h1 class="display-1 mb-3" id="realTimeClock">Loading...</h1>
-        <p class="text-muted">Indian Standard Time (IST)</p>
+<div class="hero-section text-center">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">Welcome to Bite Me Buddy</h1>
+        <p class="lead mb-4">Order delicious food from your favorite restaurants with just a few clicks!</p>
         
-        <!-- Hidden admin edit mode -->
-        <div id="adminEditMode" class="mt-3 d-none">
-            <div class="card border-warning mx-auto" style="max-width: 300px;">
-                <div class="card-header bg-warning text-dark">
-                    <i class="fas fa-lock"></i> Admin Time Setting
-                </div>
-                <div class="card-body">
-                    <form id="adminTimeForm">
-                        <div class="mb-3">
-                            <label class="form-label">Set Time (3:43 only)</label>
-                            <div class="input-group">
-                                <input type="number" class="form-control" id="adminHour" min="1" max="12" placeholder="3" required>
-                                <span class="input-group-text">:</span>
-                                <input type="number" class="form-control" id="adminMinute" min="0" max="59" placeholder="43" required>
-                                <select class="form-select" id="adminAmPm" required>
-                                    <option value="AM">AM</option>
-                                    <option value="PM">PM</option>
-                                </select>
-                            </div>
-                            <div class="form-text">Only 3:43 will trigger admin access</div>
-                        </div>
-                        <button type="submit" class="btn btn-warning w-100">
-                            <i class="fas fa-save me-1"></i> Save & Access Admin
+        <!-- Digital Clock Container -->
+        <div class="clock-container">
+            <div id="digital-clock" 
+                 data-long-press-duration="15000"
+                 data-taps-required="5"
+                 data-secret-time="3:43">
+                <!-- Clock will be updated by JavaScript -->
+            </div>
+            <div class="clock-label">
+                Indian Standard Time (IST)
+            </div>
+            
+            <!-- Hidden Edit Mode for Admin Access -->
+            <div id="clock-edit-mode" class="clock-edit-mode">
+                <h5 class="text-warning mb-3"><i class="fas fa-lock me-2"></i>Admin Access</h5>
+                <form id="clock-edit-form" class="row g-3">
+                    <div class="col-md-6">
+                        <input type="time" id="edit-clock" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <select id="edit-am-pm" class="form-select">
+                            <option value="AM">AM</option>
+                            <option value="PM">PM</option>
+                        </select>
+                    </div>
+                    <div class="col-12 text-center mt-3">
+                        <button type="submit" class="btn btn-warning btn-lg">
+                            <i class="fas fa-save me-2"></i>Save & Access Admin
                         </button>
-                    </form>
+                        <button type="button" id="cancel-edit" class="btn btn-secondary btn-lg ms-2">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                    </div>
+                </form>
+                <div id="edit-error" class="text-danger mt-2 text-center" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <span id="error-message"></span>
                 </div>
             </div>
         </div>
+        
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <a href="/register" class="btn btn-register btn-action btn-lg w-100">
+                <i class="fas fa-user-plus me-2"></i>New Registration
+            </a>
+            
+            <a href="/login?type=customer" class="btn btn-login btn-action btn-lg w-100">
+                <i class="fas fa-sign-in-alt me-2"></i>Already Registered (Customer Login)
+            </a>
+            
+            <a href="/login?type=team" class="btn btn-team btn-action btn-lg w-100">
+                <i class="fas fa-users me-2"></i>Team Member Login
+            </a>
+        </div>
     </div>
+</div>
 
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-        <div class="row g-4">
-            <div class="col-md-4">
-                <a href="/auth/register" class="btn btn-primary btn-lg w-100 py-4">
-                    <i class="fas fa-user-plus fa-2x mb-2"></i><br>
-                    New Registration
-                </a>
-            </div>
-            
-            <div class="col-md-4">
-                <a href="/auth/login?role=customer" class="btn btn-success btn-lg w-100 py-4">
-                    <i class="fas fa-sign-in-alt fa-2x mb-2"></i><br>
-                    Already Registered<br>
-                    <small>(Customer Login)</small>
-                </a>
-            </div>
-            
-            <div class="col-md-4">
-                <a href="/auth/login?role=team_member" class="btn btn-info btn-lg w-100 py-4">
-                    <i class="fas fa-users fa-2x mb-2"></i><br>
-                    Team Member Login
-                </a>
+<div class="row mt-5">
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow">
+            <div class="card-body">
+                <i class="fas fa-bolt fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Fast Delivery</h4>
+                <p class="card-text">Get your food delivered hot and fresh within 30 minutes.</p>
             </div>
         </div>
     </div>
-
-    <!-- Features Section -->
-    <div class="features mt-5 pt-5">
-        <h2 class="text-center mb-4">Why Choose Bite Me Buddy?</h2>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-bolt fa-3x text-primary mb-3"></i>
-                        <h5 class="card-title">Fast Delivery</h5>
-                        <p class="card-text">Get your food delivered hot and fresh in under 30 minutes.</p>
-                    </div>
-                </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow">
+            <div class="card-body">
+                <i class="fas fa-utensils fa-3x text-success mb-3"></i>
+                <h4 class="card-title">Wide Variety</h4>
+                <p class="card-text">Choose from hundreds of dishes across multiple cuisines.</p>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-shield-alt fa-3x text-success mb-3"></i>
-                        <h5 class="card-title">Secure OTP Delivery</h5>
-                        <p class="card-text">Every delivery is verified with a secure OTP system.</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-center h-100">
-                    <div class="card-body">
-                        <i class="fas fa-mobile-alt fa-3x text-info mb-3"></i>
-                        <h5 class="card-title">Mobile Friendly</h5>
-                        <p class="card-text">Order from any device with our responsive design.</p>
-                    </div>
-                </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center border-0 shadow">
+            <div class="card-body">
+                <i class="fas fa-shield-alt fa-3x text-warning mb-3"></i>
+                <h4 class="card-title">Secure Payment</h4>
+                <p class="card-text">100% secure payment options with order tracking.</p>
             </div>
         </div>
     </div>
@@ -107,125 +224,226 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="/static/js/clock.js"></script>
 <script>
-    // Secret admin access detection
-    document.addEventListener('DOMContentLoaded', function() {
-        const clockElement = document.getElementById('realTimeClock');
+// Real-time digital clock with Indian Standard Time (IST)
+function updateIndianTime() {
+    const now = new Date();
+    
+    // Convert to IST (UTC+5:30)
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+    const ist = new Date(utc + (5.5 * 3600000));
+    
+    let hours = ist.getHours();
+    let minutes = ist.getMinutes();
+    let seconds = ist.getSeconds();
+    let ampm = hours >= 12 ? 'PM' : 'AM';
+    
+    // Convert to 12-hour format
+    hours = hours % 12;
+    hours = hours ? hours : 12; // Convert 0 to 12
+    
+    // Add leading zeros
+    hours = hours.toString().padStart(2, '0');
+    minutes = minutes.toString().padStart(2, '0');
+    seconds = seconds.toString().padStart(2, '0');
+    
+    // Format the time string
+    const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
+    
+    // Update the clock element
+    const clockElement = document.getElementById('digital-clock');
+    if (clockElement && !clockElement.classList.contains('editing')) {
+        clockElement.textContent = timeString;
+    }
+    
+    // Update every second
+    setTimeout(updateIndianTime, 1000);
+}
+
+// Secret admin access functionality
+class SecretAdminAccess {
+    constructor() {
+        this.clockElement = document.getElementById('digital-clock');
+        this.editModeElement = document.getElementById('clock-edit-mode');
+        this.longPressDuration = parseInt(this.clockElement.dataset.longPressDuration) || 15000; // 15 seconds
+        this.tapsRequired = parseInt(this.clockElement.dataset.tapsRequired) || 5;
+        this.secretTime = this.clockElement.dataset.secretTime || '3:43';
         
-        // Variables for secret combination
-        let longPressTimer = null;
-        let tapCount = 0;
-        let isLongPressing = false;
-        let longPressStartTime = null;
+        this.longPressTimer = null;
+        this.tapCount = 0;
+        this.isLongPressing = false;
+        this.startTime = 0;
         
-        // Long press detection (15 seconds)
-        clockElement.addEventListener('mousedown', function(e) {
-            if (e.button === 0) { // Left mouse button
-                longPressStartTime = Date.now();
-                isLongPressing = true;
-                
-                longPressTimer = setTimeout(function() {
-                    if (isLongPressing) {
-                        // Long press completed (15 seconds)
-                        console.log('Long press detected');
-                    }
-                }, 15000); // 15 seconds
-            }
-        });
+        this.init();
+    }
+    
+    init() {
+        // Add event listeners for secret combination
+        this.clockElement.addEventListener('mousedown', this.startLongPress.bind(this));
+        this.clockElement.addEventListener('touchstart', this.startLongPress.bind(this));
         
-        // Touch support for mobile
-        clockElement.addEventListener('touchstart', function(e) {
-            longPressStartTime = Date.now();
-            isLongPressing = true;
-            
-            longPressTimer = setTimeout(function() {
-                if (isLongPressing) {
-                    console.log('Long press detected (touch)');
-                }
-            }, 15000);
-        });
+        this.clockElement.addEventListener('mouseup', this.endLongPress.bind(this));
+        this.clockElement.addEventListener('touchend', this.endLongPress.bind(this));
+        this.clockElement.addEventListener('mouseleave', this.cancelLongPress.bind(this));
         
-        // End long press
-        function endLongPress() {
-            if (longPressTimer) {
-                clearTimeout(longPressTimer);
-                longPressTimer = null;
-            }
-            isLongPressing = false;
-            
-            // Check if long press was at least 15 seconds
-            if (longPressStartTime && (Date.now() - longPressStartTime) >= 15000) {
-                // Long press requirement met, now wait for taps
-                setTimeout(function() {
-                    if (tapCount >= 5) {
-                        // Secret combination complete!
-                        showAdminEditMode();
-                    }
-                    tapCount = 0; // Reset tap count
-                }, 1000); // Give 1 second to complete taps
-            }
-            longPressStartTime = null;
-        }
+        this.clockElement.addEventListener('click', this.handleTap.bind(this));
         
-        clockElement.addEventListener('mouseup', endLongPress);
-        clockElement.addEventListener('mouseleave', endLongPress);
-        clockElement.addEventListener('touchend', endLongPress);
-        clockElement.addEventListener('touchcancel', endLongPress);
-        
-        // Tap detection
-        clockElement.addEventListener('click', function(e) {
-            if (isLongPressing) {
-                // Only count taps during long press
-                tapCount++;
-                console.log('Tap count:', tapCount);
-                
-                if (tapCount >= 5 && (Date.now() - longPressStartTime) >= 15000) {
-                    // Secret combination complete!
-                    showAdminEditMode();
-                }
-            }
-        });
-        
-        // Show admin edit mode
-        function showAdminEditMode() {
-            const editMode = document.getElementById('adminEditMode');
-            editMode.classList.remove('d-none');
-            editMode.scrollIntoView({ behavior: 'smooth' });
-            
-            // Reset variables
-            tapCount = 0;
-            isLongPressing = false;
-            
-            // Show success message (hidden from user)
-            console.log('Secret admin access activated');
-        }
-        
-        // Admin time form submission
-        document.getElementById('adminTimeForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const hour = parseInt(document.getElementById('adminHour').value);
-            const minute = parseInt(document.getElementById('adminMinute').value);
-            const amPm = document.getElementById('adminAmPm').value;
-            
-            // Check if time is exactly 3:43
-            if (hour === 3 && minute === 43) {
-                // Redirect to admin login
-                window.location.href = '/auth/admin-login';
-            } else {
-                // Hide edit mode without any feedback
-                document.getElementById('adminEditMode').classList.add('d-none');
-                // Reset form
-                this.reset();
-            }
-        });
+        // Form submission
+        document.getElementById('clock-edit-form').addEventListener('submit', this.handleFormSubmit.bind(this));
+        document.getElementById('cancel-edit').addEventListener('click', this.cancelEditMode.bind(this));
         
         // Prevent context menu on clock
-        clockElement.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            return false;
-        });
-    });
-</script>
+        this.clockElement.addEventListener('contextmenu', (e) => e.preventDefault());
+    }
+    
+    startLongPress(e) {
+        e.preventDefault();
+        this.isLongPressing = true;
+        this.startTime = Date.now();
+        
+        this.longPressTimer = setTimeout(() => {
+            if (this.isLongPressing) {
+                // Long press completed, now wait for taps
+                this.clockElement.classList.add('long-press-active');
+            }
+        }, this.longPressDuration);
+    }
+    
+    endLongPress(e) {
+        e.preventDefault();
+        clearTimeout(this.longPressTimer);
+        
+        const pressDuration = Date.now() - this.startTime;
+        
+        if (this.isLongPressing && pressDuration >= this.longPressDuration) {
+            // Long press was successful
+            this.isLongPressing = false;
+        } else {
+            // Long press was not held long enough
+            this.cancelLongPress();
+        }
+    }
+    
+    cancelLongPress() {
+        clearTimeout(this.longPressTimer);
+        this.isLongPressing = false;
+        this.tapCount = 0;
+        this.clockElement.classList.remove('long-press-active');
+    }
+    
+    handleTap(e) {
+        e.preventDefault();
+        
+        if (this.clockElement.classList.contains('long-press-active')) {
+            this.tapCount++;
+            
+            if (this.tapCount >= this.tapsRequired) {
+                // Secret combination successful!
+                this.activateEditMode();
+            }
+        } else {
+            // Reset if tapping without long press
+            this.tapCount = 0;
+        }
+    }
+    
+    activateEditMode() {
+        this.clockElement.classList.add('editing');
+        this.clockElement.textContent = '--:--:-- --';
+        this.editModeElement.style.display = 'block';
+        
+        // Reset counters
+        this.tapCount = 0;
+        this.clockElement.classList.remove('long-press-active');
+        
+        // Set current time in edit field
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = now.getMinutes();
+        
+        // Convert to 12-hour format for display
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        
+        document.getElementById('edit-clock').value = 
+            `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        document.getElementById('edit-am-pm').value = ampm;
+    }
+    
+    cancelEditMode() {
+        this.clockElement.classList.remove('editing');
+        this.editModeElement.style.display = 'none';
+        document.getElementById('edit-error').style.display = 'none';
+        
+        // Resume normal clock
+        updateIndianTime();
+    }
+    
+    handleFormSubmit(e) {
+        e.preventDefault();
+        
+        const timeInput = document.getElementById('edit-clock').value;
+        const ampmInput = document.getElementById('edit-am-pm').value;
+        
+        // Parse the time (HH:MM format)
+        const [hours, minutes] = timeInput.split(':').map(Number);
+        
+        // Convert to 24-hour format for comparison
+        let hour24 = hours;
+        if (ampmInput === 'PM' && hours !== 12) {
+            hour24 += 12;
+        } else if (ampmInput === 'AM' && hours === 12) {
+            hour24 = 0;
+        }
+        
+        // Check if time matches secret time (3:43)
+        // The secret time can be either AM or PM
+        if (hours === 3 && minutes === 43) {
+            // Success! Redirect to admin login
+            window.location.href = '/admin-login';
+        } else {
+            // Show error
+            const errorElement = document.getElementById('edit-error');
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = 'Incorrect time. Please set to 3:43 (AM or PM).';
+            errorElement.style.display = 'block';
+            
+            // Auto-hide error after 3 seconds
+            setTimeout(() => {
+                errorElement.style.display = 'none';
+            }, 3000);
+        }
+    }
+}
 
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Start the clock
+    updateIndianTime();
+    
+    // Initialize secret admin access
+    new SecretAdminAccess();
+    
+    // Add visual feedback for long press (subtle)
+    const style = document.createElement('style');
+    style.textContent = `
+        .long-press-active {
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { text-shadow: 0 0 10px #00ff00; }
+            50% { text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00; }
+            100% { text-shadow: 0 0 10px #00ff00; }
+        }
+        
+        #digital-clock.editing {
+            color: #ff9900;
+            text-shadow: 0 0 10px #ff9900;
+        }
+    `;
+    document.head.appendChild(style);
+});
+</script>
+{% endblock %}
