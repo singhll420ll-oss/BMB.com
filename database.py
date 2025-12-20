@@ -1,9 +1,5 @@
 import os
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    create_async_engine,
-    async_sessionmaker,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import MetaData, create_engine
 
@@ -15,14 +11,11 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 # fallback for local
 if not DATABASE_URL:
-    DATABASE_URL = sqlite+aiosqlite:///./test.db
+    DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
-# 🔥 VERY IMPORTANT FIX
+# PostgreSQL async fix
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace(
-        postgresql+asyncpg://user:pass@host/dbname
-        1
-    )
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
 
 # --------------------------------------------------
 # METADATA
@@ -69,17 +62,9 @@ async def get_db():
 # --------------------------------------------------
 
 if DATABASE_URL.startswith("postgresql+asyncpg"):
-    SYNC_DATABASE_URL = DATABASE_URL.replace(
-        "postgresql+asyncpg",
-        "postgresql",
-        1
-    )
+    SYNC_DATABASE_URL = DATABASE_URL.replace("postgresql+asyncpg", "postgresql", 1)
 elif DATABASE_URL.startswith("sqlite+aiosqlite"):
-    SYNC_DATABASE_URL = DATABASE_URL.replace(
-        "sqlite+aiosqlite",
-        "sqlite",
-        1
-    )
+    SYNC_DATABASE_URL = DATABASE_URL.replace("sqlite+aiosqlite", "sqlite", 1)
 else:
     SYNC_DATABASE_URL = DATABASE_URL
 
