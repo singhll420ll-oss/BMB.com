@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
     # Create upload directory if not exists
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
 
-    # Create DB tables (async safe)
+    # Create DB tables (async-safe)
     try:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
@@ -122,5 +122,5 @@ if __name__ == "__main__":
         "main:app",
         host="0.0.0.0",
         port=8000,
-        reload=False  # Render में reload=False रखना safe है
+        reload=True  # Development mode
     )
