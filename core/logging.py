@@ -1,67 +1,63 @@
 """
-Structured logging configuration
+Logging configuration for Bite Me Buddy
 """
 
-import sys
-import structlog
-from structlog.stdlib import LoggerFactory
-from structlog.processors import JSONRenderer, TimeStamper, format_exc_info
-from structlog.threadlocal import wrap_dict
 import logging
+import sys
+from typing import Any, Dict
+from datetime import datetime
+import json
+
+class JSONFormatter(logging.Formatter):
+    """Custom JSON formatter for structured logging"""
+    
+    def format(self, record: logging.LogRecord) -> str:
+        log_data: Dict[str, Any] = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
+        }
+        
+        if hasattr(record, "extra"):
+            log_data.update(record.extra)
+        
+        if record.exc_info:
+            log_data["exception"] = self.formatException(record.exc_info)
+        
+        return json.dumps(log_data)
 
 def setup_logging():
-    """Configure structured logging"""
+    """Setup logging configuration"""
     
-    # Configure standard library logging
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=logging.INFO,
-    )
+    # Create logger
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
     
-    # Configure structlog
-    structlog.configure(
-        processors=[
-            structlog.stdlib.filter_by_level,
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.stdlib.PositionalArgumentsFormatter(),
-            TimeStamper(fmt="iso"),
-            structlog.processors.StackInfoRenderer(),
-            structlog.processors.format_exc_info,
-            structlog.processors.UnicodeDecoder(),
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
-        context_class=wrap_dict(dict),
-        logger_factory=LoggerFactory(),
-        wrapper_class=structlog.stdlib.BoundLogger,
-        cache_logger_on_first_use=True,
-    )
+    # Remove existing handlers
+    logger.handlers.clear()
     
-    # Get root logger and set level
-    root_logger = logging.getLogger()
-    root_logger.setLevel(logging.INFO)
+    # Create console handler
+    console_handler = logging.StreamHandler(sys.stdout)
     
-    # Create console handler with structlog formatter
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
-    
-    # Use ProcessorFormatter from structlog for final output
-    formatter = structlog.stdlib.ProcessorFormatter(
-        processor=JSONRenderer(),
-        foreign_pre_chain=[
-            structlog.stdlib.add_logger_name,
-            structlog.stdlib.add_log_level,
-            structlog.processors.TimeStamper(fmt="iso"),
-        ],
-    )
+    # Set formatter
+    if settings.DEBUG:
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+    else:
+        formatter = JSONFormatter()
     
     console_handler.setFormatter(formatter)
-    root_logger.addHandler(console_handler)
     
-    # Silence noisy loggers
-    for logger_name in ["uvicorn.access", "uvicorn.error"]:
-        logging.getLogger(logger_name).handlers = []
-        logging.getLogger(logger_name).propagate = True
+    # Add handler to logger
+    logger.addHandler(console_handler)
     
-    return structlog.get_logger()
+    # Set levels for specific loggers
+    logging.getLogger("uvicorn").setLevel(logging.WARNING)
+    logging.getLogger("uvicorn.access").setLevel(logging.WARNING)
+    
+    logger.info("Logging setup complete")
