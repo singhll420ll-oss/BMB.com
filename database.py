@@ -1,23 +1,29 @@
-"""
-Database configuration and session management
-"""
 
+
+import os
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import declarative_base
 from sqlalchemy import MetaData
-from core.config import settings
 
-# Database URL
-DATABASE_URL = settings.DATABASE_URL
-SYNC_DATABASE_URL = settings.SYNC_DATABASE_URL
+# Database URL - Render ke liye fix
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+
+# IMPORTANT: Render PostgreSQL URL fix
+# postgres:// → postgresql+asyncpg://
+if DATABASE_URL and DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+asyncpg://", 1)
+
+# For sync connections (Alembic/migrations)
+SYNC_DATABASE_URL = DATABASE_URL.replace("+asyncpg", "") if "+asyncpg" in DATABASE_URL else DATABASE_URL
 
 # Create async engine
 engine = create_async_engine(
     DATABASE_URL,
-    echo=settings.DEBUG,
+    echo=os.getenv("DEBUG", "False").lower() == "true",
     future=True,
     pool_pre_ping=True,
-    pool_recycle=300
+    pool_recycle=300,
+    connect_args={"ssl": "require"} if "postgresql" in DATABASE_URL else {}
 )
 
 # Create async session factory
@@ -41,7 +47,6 @@ metadata = MetaData(
         "pk": "pk_%(table_name)s"
     }
 )
-
 Base.metadata = metadata
 
 async def get_db() -> AsyncSession:
@@ -58,6 +63,17 @@ async def get_db() -> AsyncSession:
         finally:
             await session.close()
 
-# Sync engine for Alembic
+# Sync engine for Alembic (migrations)
 from sqlalchemy import create_engine as create_sync_engine
-sync_engine = create_sync_engine(SYNC_DATABASE_URL)
+sync_engine = None
+
+if "postgresql" in SYNC_DATABASE_URL:
+    sync_engine = create_sync_engine(
+        SYNC_DATABASE_URL,
+        connect_args={"ssl": "require"}
+    )
+elif "sqlite" in SYNC_DATABASE_URL:
+    sync_engine = create_sync_engine(
+        SYNC_DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
