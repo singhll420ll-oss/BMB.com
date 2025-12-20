@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Our Services - Bite Me Buddy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .services-header {
+        background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+                    url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80');
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 80px 0;
+        margin-bottom: 40px;
+        border-radius: 10px;
+        text-align: center;
+    }
+    
+    .service-card {
+        border: none;
+        border-radius: 15px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        height: 100%;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .service-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    }
+    
+    .service-image {
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+    
+    .service-body {
+        padding: 20px;
+    }
+    
+    .service-title {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .service-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 15px;
+    }
+    
+    .btn-select {
+        background: linear-gradient(45deg, #2193b0, #6dd5ed);
+        border: none;
+        color: white;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-select:hover {
+        background: linear-gradient(45deg, #1a7a94, #5bc0de);
+        transform: scale(1.05);
+    }
+    
+    .no-image {
+        height: 200px;
+        background: linear-gradient(45deg, #f5f5f5, #e0e0e0);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #999;
+    }
+    
+    .no-image i {
+        font-size: 3rem;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #ddd;
+        margin-bottom: 20px;
+    }
+    
+    @media (max-width: 768px) {
+        .services-header {
+            padding: 50px 0;
+        }
+        
+        .service-card {
+            margin-bottom: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="services-header">
+    <div class="container">
+        <h1 class="display-5 fw-bold mb-3">Our Food Services</h1>
+        <p class="lead mb-0">Choose from our wide range of food services and order your favorite meals</p>
+    </div>
+</div>
+
+<div class="container">
+    {% if services %}
+    <div class="row">
+        {% for service in services %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="service-card">
+                {% if service.image_url %}
+                <img src="{{ service.image_url }}" class="service-image" alt="{{ service.name }}">
+                {% else %}
+                <div class="no-image">
+                    <i class="fas fa-utensils"></i>
+                </div>
+                {% endif %}
+                
+                <div class="service-body">
+                    <h4 class="service-title">{{ service.name }}</h4>
+                    <p class="service-description">
+                        {{ service.description or 'Delicious food from our kitchen' }}
+                    </p>
+                    <a href="/services/{{ service.id }}/menu" class="btn btn-select">
+                        <i class="fas fa-arrow-right me-2"></i>View Menu
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-utensils"></i>
+        <h3 class="text-muted">No Services Available</h3>
+        <p class="text-muted">Check back soon for our delicious food services!</p>
+        <a href="/" class="btn btn-primary">
+            <i class="fas fa-home me-2"></i>Back to Home
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
