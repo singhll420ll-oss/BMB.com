@@ -207,4 +207,23 @@ async def get_current_user_info(
 
 @router.post("/change-password")
 async def change_password(
-    old_password
+    old_password: str,
+    new_password: str,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Change user password"""
+    # Verify old password
+    if not verify_password(old_password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid old password"
+        )
+    
+    # Update password
+    user.hashed_password = get_password_hash(new_password)
+    await db.commit()
+    await db.refresh(user)
+    
+    logger.info(f"Password changed for user: {user.username}")
+    return {"message": "Password changed successfully"}
